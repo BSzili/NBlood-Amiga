@@ -1,0 +1,11 @@
+[submodule "jfbuild"]
+	path = jfbuild
+	url = ../jfbuild
+	branch = amiga
+[submodule "jfaudiolib"]
+	path = jfaudiolib
+	url = ../jfaudiolib
+	branch = amiga
+[submodule "jfmact"]
+	path = jfmact
+	url = ../jfmact
