@@ -1,0 +1,6 @@
+*.o
+*.map
+*.exe
+/src/version-auto.c
+/*.060
+/*.040
