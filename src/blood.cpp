@@ -255,7 +255,7 @@ void PrecacheDude(spritetype *pSprite)
     DUDEINFO *pDudeInfo = getDudeInfo(pSprite->type);
 #ifndef EDUKE32
     for (int i = 0; i <= 18; i++) // kGenDudeSeqIdleW = 17, kGenDudeSeqTransform = 18
-		seqPrecacheId(pDudeInfo->seqStartID+i);
+        seqPrecacheId(pDudeInfo->seqStartID+i);
 
     switch (pSprite->type)
     {
@@ -771,6 +771,40 @@ void PreloadTiles(void)
     for (int i = 0; i < 10; i++)
     {
         PrecacheSound(gPlayerGibThingComments[i]);
+    }
+    // multiplayer sounds
+    if (gGameOptions.nGameType > 0)
+    {
+        // radio
+        PrecacheSound(778);
+        // taunt F1-F10
+        for (int i = 4400; i <= 4409; i++)
+        {
+            PrecacheSound(i);
+        }
+    }
+    if (gGameOptions.nGameType >= 2)
+    {
+        // FinishHim
+        PrecacheSound(3313);
+        // gSuicide
+        for (int i = 4202; i <= 4207; i++)
+        {
+            PrecacheSound(i);
+        }
+        // gVictory
+        for (int i = 4100; i <= 4124; i++)
+        {
+            PrecacheSound(i);
+        }
+    }
+    if (gGameOptions.nGameType == 3)
+    {
+        // CTF
+        for (int i = 8000; i <= 8007; i++)
+        {
+            PrecacheSound(i);
+        }
     }
 #endif
 
