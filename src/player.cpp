@@ -1277,7 +1277,7 @@ int ActionScan(PLAYER *pPlayer, int *a2, int *a3)
                 int nMass = getDudeInfo(pSprite->type)->mass;
                 if (nMass)
                 {
-                    int t2 = divscale(0xccccc, nMass, 8);
+                    int t2 = divscale8(0xccccc, nMass);
                     xvel[*a2] += mulscale16(x, t2);
                     yvel[*a2] += mulscale16(y, t2);
                     zvel[*a2] += mulscale16(z, t2);
@@ -1752,7 +1752,7 @@ void playerProcess(PLAYER *pPlayer)
         pPlayer->zViewVel += mulscale16(dz<<8, 0xa000);
     else
         pPlayer->zViewVel += mulscale16(dz<<8, 0x1800);
-    pPlayer->zView += pPlayer->zViewVel>>8;//printf("%s %d %d %d\n", __FUNCTION__, pPlayer->zView, pPlayer->zViewVel, pPlayer->zViewVel>>8);
+    pPlayer->zView += pPlayer->zViewVel>>8;
     pPlayer->zWeaponVel = interpolate(pPlayer->zWeaponVel, zvel[nSprite], 0x5000);
     dz = pPlayer->pSprite->z-pPosture->weaponAboveZ-pPlayer->zWeapon;
     if (dz > 0)
