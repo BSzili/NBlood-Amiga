@@ -389,7 +389,7 @@ bool levelTryPlayMusic(int nEpisode, int nLevel, bool bSetLevelSong)
     char buffer[BMAX_PATH];
     if (CDAudioToggle && gEpisodeInfo[nEpisode].levelsInfo[nLevel].SongId > 0)
 #ifndef EDUKE32
-        snprintf(buffer, BMAX_PATH, "blood%02i.wav", gEpisodeInfo[nEpisode].levelsInfo[nLevel].SongId);
+        snprintf(buffer, BMAX_PATH, "blood%02i", gEpisodeInfo[nEpisode].levelsInfo[nLevel].SongId);
 #else
         snprintf(buffer, BMAX_PATH, "blood%02i.ogg", gEpisodeInfo[nEpisode].levelsInfo[nLevel].SongId);
 #endif

@@ -99,14 +99,16 @@ bool bWaveMusic;
 int nWaveMusicHandle;
 
 #ifndef EDUKE32
-// MIDI -> WAV replacement function
+// MIDI -> MP3, WAV replacement function
 #undef S_OpenAudio
-int32_t S_OpenAudio(const char *fn, char searchfirst, uint8_t const ismusic)
+static int32_t S_OpenAudio(const char *fn, char searchfirst, uint8_t const ismusic)
 {
-    int32_t fp = kopen4loadfrommod(fn, searchfirst);
+    char testfn[16];
+    strcpy(testfn, fn);
+    strcat(testfn, ".mp3");
+    int32_t fp = kopen4loadfrommod(testfn, searchfirst);
     if (fp < 0)
     {
-        char testfn[16];
         strcpy(testfn, fn);
         strcat(testfn, ".wav");
         fp = kopen4loadfrommod(testfn, searchfirst);
@@ -127,7 +129,7 @@ int sndPlaySong(const char *songName, bool bLoop)
     if (fp < 0 && CDAudioToggle)
     {
         int songId = -1;
-        int numMatches = sscanf(songName, "blood%02d.wav", &songId);
+        int numMatches = sscanf(songName, "blood%02d", &songId);
         if (numMatches > 0 && songId > 0)
         {
             sndStopSong();
