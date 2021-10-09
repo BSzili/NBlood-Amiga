@@ -322,7 +322,11 @@ static inline int GetWallType(int nWall)
     return wall[nWall].type;
 }
 
+#ifdef __AMIGA__
+template<typename T> inline void GetSpriteExtents(T const * const pSprite, int *top, int *bottom)
+#else
 template<typename T> void GetSpriteExtents(T const * const pSprite, int *top, int *bottom)
+#endif
 {
     *top = *bottom = pSprite->z;
     if ((pSprite->cstat & 0x30) != 0x20)
