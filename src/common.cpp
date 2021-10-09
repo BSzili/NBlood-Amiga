@@ -246,8 +246,10 @@ void G_LoadGroups(int32_t autoload)
     }
 #endif
 
+#ifndef __AMIGA__
     loaddefinitions_game(BLOODWIDESCREENDEF, TRUE);
     loaddefinitions_game(G_DefFile(), TRUE);
+#endif
 
     struct strllist *s;
 

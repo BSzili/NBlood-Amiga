@@ -2248,6 +2248,7 @@ int app_main(int argc, char const * const * argv)
 
     levelLoadDefaults();
 
+#ifndef __AMIGA__
     loaddefinitionsfile(BLOODWIDESCREENDEF);
     loaddefinitions_game(BLOODWIDESCREENDEF, FALSE);
 
@@ -2259,6 +2260,7 @@ int app_main(int argc, char const * const * argv)
         initprintf("Definitions file \"%s\" loaded in %d ms.\n", defsfile, etime-stime);
     }
     loaddefinitions_game(defsfile, FALSE);
+#endif
     powerupInit();
     initprintf("Loading cosine table\n");
     trigInit(gSysRes);
@@ -2570,6 +2572,7 @@ static int32_t S_DefineMusic(const char *ID, const char *name)
     return S_DefineAudioIfSupported(gEpisodeInfo[nEpisode].levelsInfo[nLevel].Song, name);
 }
 
+#ifndef __AMIGA__
 static int parsedefinitions_game(scriptfile *, int);
 
 static void parsedefinitions_game_include(const char *fileName, scriptfile *pScript, const char *cmdtokptr, int const firstPass)
@@ -3169,6 +3172,7 @@ int loaddefinitions_game(const char *fileName, int32_t firstPass)
 
     return 0;
 }
+#endif
 
 INICHAIN *pINIChain;
 INICHAIN const*pINISelected;
