@@ -5570,6 +5570,14 @@ void actProcessSprites(void)
 
                         int oZ = klabs(pSprite->z-pSprite2->z)>>8;
                         if (oZ >= proxyDist) continue;
+
+                        //if (approxDist(oX, oY) >= proxyDist) continue;
+                        // approxDist replacement to avoid calculating klabs twice
+                        if (oX > oY)
+                            oY = (3*oY)>>3;
+                        else
+                            oX = (3*oX)>>3;
+                        if (oX+oY >= proxyDist) continue;
 #endif
                         if (CheckProximity(pSprite2, pSprite->x, pSprite->y, pSprite->z, pSprite->sectnum, proxyDist)) {
 
