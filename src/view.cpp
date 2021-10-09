@@ -1921,15 +1921,19 @@ void UpdateStatusBar(ClockTicks arg)
 
     if (gGameOptions.nGameType == 3)
     {
+#ifndef __AMIGA__
         if (VanillaMode())
+#endif
         {
             viewDrawCtfHudVanilla(arg);
         }
+#ifndef __AMIGA__
         else
         {
             viewDrawCtfHud(arg);
             viewDrawPlayerFlags();
         }
+#endif
     }
     else
     {
