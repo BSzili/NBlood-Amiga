@@ -355,7 +355,7 @@ static int osdcmd_resetcrosshair(osdcmdptr_t UNUSED(parm))
 
 static int osdcmd_give(osdcmdptr_t parm)
 {
-    if (numplayers != 1 || !gGameStarted || gMe->pXSprite->health == 0)
+    if (numplayers != 1 || !gGameStarted || gDemo.at1 || gMe->pXSprite->health == 0)
     {
         OSD_Printf("give: Cannot give while dead or not in a single-player game.\n");
         return OSDCMD_OK;
@@ -415,7 +415,7 @@ static int osdcmd_give(osdcmdptr_t parm)
 static int osdcmd_god(osdcmdptr_t UNUSED(parm))
 {
     UNREFERENCED_CONST_PARAMETER(parm);
-    if (numplayers == 1 && gGameStarted)
+    if (numplayers == 1 && gGameStarted && !gDemo.at1)
     {
         SetGodMode(!gMe->godMode);
         gCheatMgr.m_bPlayerCheated = true;
@@ -430,7 +430,7 @@ static int osdcmd_noclip(osdcmdptr_t UNUSED(parm))
 {
     UNREFERENCED_CONST_PARAMETER(parm);
 
-    if (numplayers == 1 && gGameStarted)
+    if (numplayers == 1 && gGameStarted && !gDemo.at1)
     {
         SetClipMode(!gNoClip);
         gCheatMgr.m_bPlayerCheated = true;
@@ -1043,7 +1043,7 @@ int32_t registerosdcommands(void)
 //
         { "horizcenter", "enable/disable centered horizon line", (void *)&gCenterHoriz, CVAR_BOOL, 0, 1 },
         { "deliriumblur", "enable/disable delirium blur effect(polymost)", (void *)&gDeliriumBlur, CVAR_BOOL, 0, 1 },
-        { "fov", "change the field of view", (void *)&gFov, CVAR_INT|CVAR_FUNCPTR, 75, 120 },
+        { "fov", "change the field of view", (void *)&gFov, CVAR_INT|CVAR_FUNCPTR, 75, 140 },
         { "in_joystick","enables input from the joystick if it is present",(void *)&gSetup.usejoystick, CVAR_BOOL|CVAR_FUNCPTR, 0, 1 },
         { "in_mouse","enables input from the mouse if it is present",(void *)&gSetup.usemouse, CVAR_BOOL|CVAR_FUNCPTR, 0, 1 },
 
@@ -1095,7 +1095,7 @@ int32_t registerosdcommands(void)
 #ifdef ASS_REVERSESTEREO
         { "snd_reversestereo", "reverses the stereo channels", (void *)&ReverseStereo, CVAR_BOOL, 0, 1 },
 #endif
-        { "snd_doppler", "enable/disable 3d sound", (void *)&gDoppler, CVAR_BOOL, 0, 1 },
+        { "snd_stereo", "enable/disable 3d stereo sound", (void *)&gStereo, CVAR_BOOL, 0, 1 },
 //        { "snd_speech", "enables/disables player speech", (void *)&ud.config.VoiceToggle, CVAR_INT, 0, 5 },
 //
 //        { "team","change team in multiplayer", (void *)&ud.team, CVAR_INT|CVAR_MULTI, 0, 3 },

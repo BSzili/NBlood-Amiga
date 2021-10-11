@@ -1336,7 +1336,7 @@ void viewDrawStats(PLAYER *pPlayer, int x, int y)
     viewDrawText(3, buffer, x, y, 20, 0, 0, true, 256);
     y += nHeight+1;
     if (gGameOptions.nGameType != 3)
-        sprintf(buffer, "K:%d/%d", gKillMgr.at4, gKillMgr.at0);
+        sprintf(buffer, "K:%d/%d", gKillMgr.at4, max(gKillMgr.at4, gKillMgr.at0));
     else
         sprintf(buffer, "K:%d", pPlayer->fragCount);
     viewDrawText(3, buffer, x, y, 20, 0, 0, true, 256);
@@ -1595,23 +1595,23 @@ void viewDrawPlayerFlags(void)
 void viewDrawCtfHudVanilla(ClockTicks arg)
 {
     int x = 1, y = 1;
-    if (dword_21EFD0[0] == 0 || ((int)totalclock & 8))
+    if (gPlayerScoreTicks[0] == 0 || ((int)totalclock & 8))
     {
         viewDrawText(0, "BLUE", x, y, -128, 10, 0, 0, 256);
-        dword_21EFD0[0] = dword_21EFD0[0] - arg;
-        if (dword_21EFD0[0] < 0)
-            dword_21EFD0[0] = 0;
-        sprintf(gTempStr, "%-3d", dword_21EFB0[0]);
+        gPlayerScoreTicks[0] = gPlayerScoreTicks[0] - arg;
+        if (gPlayerScoreTicks[0] < 0)
+            gPlayerScoreTicks[0] = 0;
+        sprintf(gTempStr, "%-3d", gPlayerScores[0]);
         viewDrawText(0, gTempStr, x, y + 10, -128, 10, 0, 0, 256);
     }
     x = 319;
-    if (dword_21EFD0[1] == 0 || ((int)totalclock & 8))
+    if (gPlayerScoreTicks[1] == 0 || ((int)totalclock & 8))
     {
         viewDrawText(0, "RED", x, y, -128, 7, 2, 0, 512);
-        dword_21EFD0[1] = dword_21EFD0[1] - arg;
-        if (dword_21EFD0[1] < 0)
-            dword_21EFD0[1] = 0;
-        sprintf(gTempStr, "%3d", dword_21EFB0[1]);
+        gPlayerScoreTicks[1] = gPlayerScoreTicks[1] - arg;
+        if (gPlayerScoreTicks[1] < 0)
+            gPlayerScoreTicks[1] = 0;
+        sprintf(gTempStr, "%3d", gPlayerScores[1]);
         viewDrawText(0, gTempStr, x, y + 10, -128, 7, 2, 0, 512);
     }
 }
@@ -1620,14 +1620,14 @@ void flashTeamScore(ClockTicks arg, int team, bool show)
 {
     dassert(0 == team || 1 == team); // 0: blue, 1: red
 
-    if (dword_21EFD0[team] == 0 || ((int)totalclock & 8))
+    if (gPlayerScoreTicks[team] == 0 || ((int)totalclock & 8))
     {
-        dword_21EFD0[team] = dword_21EFD0[team] - arg;
-        if (dword_21EFD0[team] < 0)
-            dword_21EFD0[team] = 0;
+        gPlayerScoreTicks[team] = gPlayerScoreTicks[team] - arg;
+        if (gPlayerScoreTicks[team] < 0)
+            gPlayerScoreTicks[team] = 0;
 
         if (show)
-            DrawStatNumber("%d", dword_21EFB0[team], kSBarNumberInv, 290, team ? 125 : 90, 0, team ? 2 : 10, 512, 65536 * 0.75);
+            DrawStatNumber("%d", gPlayerScores[team], kSBarNumberInv, 290, team ? 125 : 90, 0, team ? 2 : 10, 512, 65536 * 0.75);
     }
 }
 
@@ -2460,11 +2460,26 @@ tspritetype *viewAddEffect(int nTSprite, VIEW_EFFECT nViewEffect)
         if (!pNSprite)
             break;
         pNSprite->z = getflorzofslope(pTSprite->sectnum, pNSprite->x, pNSprite->y);
+        if ((sector[pNSprite->sectnum].floorpicnum >= 4080) && (sector[pNSprite->sectnum].floorpicnum <= 4095) && !VanillaMode()) // if floor has ror, find actual floor
+        {
+            int cX = pNSprite->x, cY = pNSprite->y, cZ = pNSprite->z, nSectnum = pNSprite->sectnum;
+            for (int i = 0; i < 16; i++) // scan through max stacked sectors
+            {
+                if (!CheckLink(&cX, &cY, &cZ, &nSectnum)) // if no more floors underneath, abort
+                    break;
+                cZ = getflorzofslope(nSectnum, cX, cY);
+                if ((sector[nSectnum].floorpicnum < 4080) || (sector[nSectnum].floorpicnum > 4095)) // if current sector is not open air, use as floor for shadow casting, otherwise continue to next sector
+                    break;
+            }
+            pNSprite->x = cX, pNSprite->y = cY, pNSprite->z = cZ, pNSprite->sectnum = nSectnum;
+        }
         pNSprite->shade = 127;
         pNSprite->cstat |= 2;
         pNSprite->xrepeat = pTSprite->xrepeat;
         pNSprite->yrepeat = pTSprite->yrepeat>>2;
         pNSprite->picnum = pTSprite->picnum;
+        if (!VanillaMode() && (pTSprite->type == kThingDroppedLifeLeech)) // fix shadow for thrown lifeleech
+            pNSprite->picnum = 800;
         pNSprite->pal = 5;
 #ifndef EDUKE32
         int height = tilesizy[pNSprite->picnum];
@@ -2492,10 +2507,15 @@ tspritetype *viewAddEffect(int nTSprite, VIEW_EFFECT nViewEffect)
     }
     case kViewEffectCeilGlow:
     {
+        sectortype *pSector = &sector[pTSprite->sectnum];
+        if (!VanillaMode()) // if ceiling has ror, don't render effect
+        {
+            if ((pSector->ceilingpicnum >= 4080) && (pSector->ceilingpicnum <= 4095))
+                break;
+        }
         auto pNSprite = viewInsertTSprite(pTSprite->sectnum, 32767, pTSprite);
         if (!pNSprite)
             break;
-        sectortype *pSector = &sector[pTSprite->sectnum];
         pNSprite->x = pTSprite->x;
         pNSprite->y = pTSprite->y;
         pNSprite->z = pSector->ceilingz;
@@ -2510,10 +2530,15 @@ tspritetype *viewAddEffect(int nTSprite, VIEW_EFFECT nViewEffect)
     }
     case kViewEffectFloorGlow:
     {
+        sectortype *pSector = &sector[pTSprite->sectnum];
+        if (!VanillaMode()) // if floor has ror, don't render effect
+        {
+            if ((pSector->floorpicnum >= 4080) && (pSector->floorpicnum <= 4095))
+                break;
+        }
         auto pNSprite = viewInsertTSprite(pTSprite->sectnum, 32767, pTSprite);
         if (!pNSprite)
             break;
-        sectortype *pSector = &sector[pTSprite->sectnum];
         pNSprite->x = pTSprite->x;
         pNSprite->y = pTSprite->y;
         pNSprite->z = pSector->floorz;
@@ -2548,6 +2573,8 @@ tspritetype *viewAddEffect(int nTSprite, VIEW_EFFECT nViewEffect)
         WEAPONICON weaponIcon = gWeaponIcon[pPlayer->curWeapon];
         const int nTile = weaponIcon.nTile;
         if (nTile < 0)
+            break;
+        if (pPlayer->pXSprite->health == 0)
             break;
         auto pNSprite = viewInsertTSprite(pTSprite->sectnum, 32767, pTSprite);
         if (!pNSprite)
@@ -3161,8 +3188,11 @@ void CalcOtherPosition(spritetype *pSprite, int *pX, int *pY, int *pZ, int *vsec
     *pZ += mulscale16(vZ, othercameradist);
     othercameradist = ClipHigh(othercameradist+(((int)(totalclock-othercameraclock))<<10), 65536);
     othercameraclock = (int)totalclock;
+    if (*vsectnum >= 0 && *vsectnum < kMaxSectors)
+        FindSector(*pX, *pY, *pZ, vsectnum);
+    else // sector was not found, likely viewpoint is within wall - use sprite sect and continue
+        *vsectnum = pSprite->sectnum;
     dassert(*vsectnum >= 0 && *vsectnum < kMaxSectors);
-    FindSector(*pX, *pY, *pZ, vsectnum);
     pSprite->cstat = bakCstat;
 }
 
@@ -3661,11 +3691,7 @@ void viewDrawScreen(void)
             CalcPosition(gView->pSprite, (int*)&cX, (int*)&cY, (int*)&cZ, &nSectnum, fix16_to_int(cA), q16horiz);
         }
         CheckLink((int*)&cX, (int*)&cY, (int*)&cZ, &nSectnum);
-#ifndef EDUKE32
         int v78 = gViewInterpolate ? interpolateang(gScreenTiltO, gScreenTilt, gInterpolate) : gScreenTilt;
-#else
-        int v78 = interpolateang(gScreenTiltO, gScreenTilt, gInterpolate);
-#endif
         char v14 = 0;
         char v10 = 0;
         bool bDelirium = powerupCheck(gView, kPwUpDeliriumShroom) > 0;
@@ -3842,10 +3868,14 @@ RORHACKOTHER:
             nSprite = nextspritestat[nSprite];
         }
         g_visibility = (int32_t)(ClipLow(gVisibility - 32 * gView->visibility - unk, 0) * (numplayers > 1 ? 1.f : r_ambientlightrecip));
-#ifndef EDUKE32
-        if (!gViewInterpolate) cA += fix16_from_int(deliriumTurn); else
-#endif
-        cA = (cA + interpolateangfix16(fix16_from_int(deliriumTurnO), fix16_from_int(deliriumTurn), gInterpolate)) & 0x7ffffff;
+        if (!gViewInterpolate) 
+        {
+            cA += fix16_from_int(deliriumTurn);
+        }
+        else
+        {
+            cA = (cA + interpolateangfix16(fix16_from_int(deliriumTurnO), fix16_from_int(deliriumTurn), gInterpolate)) & 0x7ffffff;
+        }
         int vfc, vf8;
         getzsofslope(nSectnum, cX, cY, &vfc, &vf8);
         if (cZ >= vf8)
@@ -3861,11 +3891,7 @@ RORHACK:
         int ror_status[16];
         for (int i = 0; i < 16; i++)
             ror_status[i] = TestBitString(gotpic, 4080+i);
-#ifndef EDUKE32
         fix16_t deliriumPitchI = gViewInterpolate ? interpolate(fix16_from_int(deliriumPitchO), fix16_from_int(deliriumPitch), gInterpolate) : fix16_from_int(deliriumPitch);
-#else
-        fix16_t deliriumPitchI = interpolate(fix16_from_int(deliriumPitchO), fix16_from_int(deliriumPitch), gInterpolate);
-#endif
         DrawMirrors(cX, cY, cZ, cA, q16horiz + fix16_from_int(defaultHoriz) + deliriumPitchI, gInterpolate, gViewIndex);
         int bakCstat = gView->pSprite->cstat;
         if (gViewPos == 0)

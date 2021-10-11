@@ -104,7 +104,7 @@ int32_t gMessageTime;
 int32_t gMessageFont;
 int32_t gbAdultContent;
 char gzAdultPassword[9];
-int32_t gDoppler;
+int32_t gStereo;
 int32_t gShowPlayerNames;
 int32_t gShowWeapon;
 int32_t gMouseSensitivity;
@@ -449,7 +449,7 @@ void CONFIG_SetDefaults(void)
     gMessageTime = 5;
     gMessageFont = 0;
     gbAdultContent = 0;
-    gDoppler = 1;
+    gStereo = 1;
     gShowPlayerNames = 0;
     gShowWeapon = 0;
     gzAdultPassword[0] = 0;
@@ -468,7 +468,7 @@ void CONFIG_SetDefaults(void)
     gDetail = 1;
     gViewInterpolate = 0;
     gBrightness = 0; // Blood has its own gamma system, make sure this is off
-    gDoppler = 0;
+    gStereo = 0;
     gSetup.usejoystick = 1;
 #endif
 
@@ -953,7 +953,7 @@ int CONFIG_ReadSetup(void)
     SCRIPT_GetNumber(scripthandle, "Options", "MessageFont", &gMessageFont);
     //SCRIPT_GetNumber(scripthandle, "Options", "AdultContent", &gbAdultContent);
     //SCRIPT_GetString(scripthandle, "Options", "AdultPassword", gzAdultPassword);
-    SCRIPT_GetNumber(scripthandle, "Options", "Doppler", &gDoppler);
+    SCRIPT_GetNumber(scripthandle, "Options", "Doppler", &gStereo);
     SCRIPT_GetNumber(scripthandle, "Options", "ShowWeapon", &gShowWeapon);
 
     SCRIPT_GetNumber(scripthandle, "Sound Setup", "FXDevice",&FXDevice);
@@ -1261,7 +1261,7 @@ void CONFIG_WriteSetup(uint32_t flags)
     SCRIPT_PutNumber(scripthandle, "Options", "MessageFont", gMessageFont, false, false);
     //SCRIPT_PutNumber(scripthandle, "Options", "AdultContent", gbAdultContent, false, false);
     //SCRIPT_PutString(scripthandle, "Options", "AdultPassword", gzAdultPassword);
-    SCRIPT_PutNumber(scripthandle, "Options", "Doppler", gDoppler, false, false);
+    SCRIPT_PutNumber(scripthandle, "Options", "Doppler", gStereo, false, false);
     SCRIPT_PutNumber(scripthandle, "Options", "ShowWeapon", gShowWeapon, false, false);
 
     SCRIPT_PutNumber(scripthandle, "Sound Setup", "FXDevice", FXDevice, false, false);

@@ -163,10 +163,7 @@ void viewPrecacheTiles(void);
 
 inline void viewInterpolateSector(int nSector, sectortype *pSector)
 {
-#ifndef EDUKE32
-    if (!gViewInterpolate) return;
-#endif
-    if (!TestBitString(gInterpolateSector, nSector))
+    if (gViewInterpolate && !TestBitString(gInterpolateSector, nSector))
     {
         viewAddInterpolation(&pSector->floorz, INTERPOLATE_TYPE_INT);
         viewAddInterpolation(&pSector->ceilingz, INTERPOLATE_TYPE_INT);
@@ -177,10 +174,7 @@ inline void viewInterpolateSector(int nSector, sectortype *pSector)
 
 inline void viewInterpolateWall(int nWall, walltype *pWall)
 {
-#ifndef EDUKE32
-    if (!gViewInterpolate) return;
-#endif
-    if (!TestBitString(gInterpolateWall, nWall))
+    if (gViewInterpolate && !TestBitString(gInterpolateWall, nWall))
     {
         viewAddInterpolation(&pWall->x, INTERPOLATE_TYPE_INT);
         viewAddInterpolation(&pWall->y, INTERPOLATE_TYPE_INT);
@@ -190,10 +184,7 @@ inline void viewInterpolateWall(int nWall, walltype *pWall)
 
 inline void viewBackupSpriteLoc(int nSprite, spritetype *pSprite)
 {
-#ifndef EDUKE32
-    if (!gViewInterpolate) return;
-#endif
-    if (!TestBitString(gInterpolateSprite, nSprite))
+    if (gViewInterpolate && !TestBitString(gInterpolateSprite, nSprite))
     {
         LOCATION *pPrevLoc = &gPrevSpriteLoc[nSprite];
         pPrevLoc->x = pSprite->x;

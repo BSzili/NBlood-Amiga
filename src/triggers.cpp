@@ -242,14 +242,16 @@ void LifeLeechOperate(spritetype *pSprite, XSPRITE *pXSprite, EVENT event)
             PLAYER *pPlayer = &gPlayer[nPlayer];
             if (pPlayer->pXSprite->health > 0)
             {
+                evKill(pSprite->index, 3);
                 pPlayer->ammoCount[8] = ClipHigh(pPlayer->ammoCount[8]+pXSprite->data3, gAmmoInfo[8].max);
                 pPlayer->hasWeapon[9] = 1;
                 if (pPlayer->curWeapon != 9)
                 {
+                    if (!VanillaMode() && checkFired6or7(pPlayer)) // if tnt/spray is actively used, do not switch weapon
+                        break;
                     pPlayer->weaponState = 0;
                     pPlayer->nextWeapon = 9;
                 }
-                evKill(pSprite->index, 3);
             }
         }
         break;
@@ -493,7 +495,7 @@ void OperateSprite(int nSprite, XSPRITE *pXSprite, EVENT event)
             spritetype* pSpawn = actSpawnDude(pSprite, pXSprite->data1, -1, 0);
             if (pSpawn) {
                 XSPRITE *pXSpawn = &xsprite[pSpawn->extra];
-                gKillMgr.sub_263E0(1);
+                gKillMgr.AddCount(1);
                 switch (pXSprite->data1) {
                     case kDudeBurningInnocent:
                     case kDudeBurningCultist:

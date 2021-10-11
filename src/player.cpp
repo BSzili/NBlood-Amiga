@@ -862,8 +862,17 @@ void playerReset(PLAYER *pPlayer)
 
 }
 
-int dword_21EFB0[8];
-ClockTicks dword_21EFD0[8];
+int gPlayerScores[kMaxPlayers];
+ClockTicks gPlayerScoreTicks[kMaxPlayers];
+
+void playerResetScores(int nPlayer)
+{
+    PLAYER *pPlayer = &gPlayer[nPlayer];
+    pPlayer->fragCount = 0;
+    memset(pPlayer->fragInfo, 0, sizeof(pPlayer->fragInfo));
+    memset(gPlayerScores, 0, sizeof(gPlayerScores));
+    memset(gPlayerScoreTicks, 0, sizeof(gPlayerScoreTicks));
+}
 
 void playerInit(int nPlayer, unsigned int a2)
 {
@@ -874,10 +883,7 @@ void playerInit(int nPlayer, unsigned int a2)
     pPlayer->teamId = nPlayer;
     if (gGameOptions.nGameType == 3)
         pPlayer->teamId = nPlayer&1;
-    pPlayer->fragCount = 0;
-    memset(dword_21EFB0, 0, sizeof(dword_21EFB0));
-    memset(dword_21EFD0, 0, sizeof(dword_21EFD0));
-    memset(pPlayer->fragInfo, 0, sizeof(pPlayer->fragInfo));
+    playerResetScores(nPlayer);
 
     if (!(a2&1))
         playerReset(pPlayer);
@@ -958,8 +964,8 @@ char PickupItem(PLAYER *pPlayer, spritetype *pItem) {
                     if ((pPlayer->hasFlag & 2) != 0 && pXItem->state) {
                         pPlayer->hasFlag &= ~2;
                         pPlayer->used2[1] = -1;
-                        dword_21EFB0[pPlayer->teamId] += 10;
-                        dword_21EFD0[pPlayer->teamId] += 240;
+                        gPlayerScores[pPlayer->teamId] += 10;
+                        gPlayerScoreTicks[pPlayer->teamId] += 240;
                         evSend(0, 0, 81, kCmdOn);
                         sprintf(buffer, "%s captured Red Flag!", gProfile[pPlayer->nPlayer].name);
                         sndStartSample(8001, 255, 2, 0);
@@ -1002,8 +1008,8 @@ char PickupItem(PLAYER *pPlayer, spritetype *pItem) {
                     {
                         pPlayer->hasFlag &= ~1;
                         pPlayer->used2[0] = -1;
-                        dword_21EFB0[pPlayer->teamId] += 10;
-                        dword_21EFD0[pPlayer->teamId] += 240;
+                        gPlayerScores[pPlayer->teamId] += 10;
+                        gPlayerScoreTicks[pPlayer->teamId] += 240;
                         evSend(0, 0, 80, kCmdOn);
                         sprintf(buffer, "%s captured Blue Flag!", gProfile[pPlayer->nPlayer].name);
                         sndStartSample(8000, 255, 2, 0);
@@ -1020,20 +1026,34 @@ char PickupItem(PLAYER *pPlayer, spritetype *pItem) {
             }
         }
         return 0;
-        case kItemFlagA:
+        case kItemFlagA: {
             if (gGameOptions.nGameType != 3) return 0;
-            evKill(pItem->index, 3, kCallbackReturnFlag);
-            pPlayer->hasFlag |= 1;
-            pPlayer->used2[0] = pItem->index;
             gBlueFlagDropped = false;
+            pPlayer->hasFlag |= 1;
+            pPlayer->used2[0] = pItem->owner;
+            const bool enemyTeam = (pPlayer->teamId&1) == 1;
+            if (enemyTeam)
+            {
+                sprintf(buffer, "%s stole Blue Flag", gProfile[pPlayer->nPlayer].name);
+                sndStartSample(8007, 255, 2, 0);
+                viewSetMessage(buffer);
+            }
             break;
-        case kItemFlagB:
+        }
+        case kItemFlagB: {
             if (gGameOptions.nGameType != 3) return 0;
-            evKill(pItem->index, 3, kCallbackReturnFlag);
-            pPlayer->hasFlag |= 2;
-            pPlayer->used2[1] = pItem->index;
             gRedFlagDropped = false;
+            pPlayer->hasFlag |= 2;
+            pPlayer->used2[1] = pItem->owner;
+            const bool enemyTeam = (pPlayer->teamId&1) == 0;
+            if (enemyTeam)
+            {
+                sprintf(buffer, "%s stole Red Flag", gProfile[pPlayer->nPlayer].name);
+                sndStartSample(8006, 255, 2, 0);
+                viewSetMessage(buffer);
+            }
             break;
+        }
         case kItemArmorBasic:
         case kItemArmorBody:
         case kItemArmorFire:
@@ -1635,7 +1655,6 @@ void ProcessInput(PLAYER *pPlayer)
         pPlayer->q16horiz = fix16_from_float(100.f*tanf(fix16_to_float(pPlayer->q16look)*fPI/1024.f));
     }
 #endif
-
     int nSector = pSprite->sectnum;
     int florhit = gSpriteHit[pSprite->extra].florhit & 0xc000;
     char va;
@@ -1877,7 +1896,7 @@ void playerFrag(PLAYER *pKiller, PLAYER *pVictim)
             pVictim->fragInfo[nVictim]--;
         }
         if (gGameOptions.nGameType == 3)
-            dword_21EFB0[pVictim->teamId]--;
+            gPlayerScores[pVictim->teamId]--;
         int nMessage = Random(5);
         int nSound = gSuicide[nMessage].at4;
         if (pVictim == gMe && gMe->handTime <= 0)
@@ -1901,11 +1920,11 @@ void playerFrag(PLAYER *pKiller, PLAYER *pVictim)
         if (gGameOptions.nGameType == 3)
         {
             if (pKiller->teamId == pVictim->teamId)
-                dword_21EFB0[pKiller->teamId]--;
+                gPlayerScores[pKiller->teamId]--;
             else
             {
-                dword_21EFB0[pKiller->teamId]++;
-                dword_21EFD0[pKiller->teamId]+=120;
+                gPlayerScores[pKiller->teamId]++;
+                gPlayerScoreTicks[pKiller->teamId]+=120;
             }
         }
         int nMessage = Random(25);
@@ -1967,7 +1986,7 @@ int playerDamageArmor(PLAYER *pPlayer, DAMAGE_TYPE nType, int nDamage)
     return nDamage;
 }
 
-spritetype *sub_40A94(PLAYER *pPlayer, int a2)
+spritetype *playerDropFlag(PLAYER *pPlayer, int a2)
 {
     char buffer[80];
     spritetype *pSprite = NULL;
@@ -2072,8 +2091,8 @@ int playerDamageSprite(int nSource, PLAYER *pPlayer, DAMAGE_TYPE nDamageType, in
         }
         sfxKill3DSound(pPlayer->pSprite, -1, 441);
         if (gGameOptions.nGameType == 3 && pPlayer->hasFlag) {
-            if (pPlayer->hasFlag&1) sub_40A94(pPlayer, kItemFlagA);
-            if (pPlayer->hasFlag&2) sub_40A94(pPlayer, kItemFlagB);
+            if (pPlayer->hasFlag&1) playerDropFlag(pPlayer, kItemFlagA);
+            if (pPlayer->hasFlag&2) playerDropFlag(pPlayer, kItemFlagB);
         }
         pPlayer->deathTime = 0;
         pPlayer->qavLoop = 0;
@@ -2273,7 +2292,7 @@ public:
 void PlayerLoadSave::Load(void)
 {
 
-    Read(dword_21EFB0, sizeof(dword_21EFB0));
+    Read(gPlayerScores, sizeof(gPlayerScores));
     Read(&gNetPlayers, sizeof(gNetPlayers));
     Read(&gProfile, sizeof(gProfile));
     Read(&gPlayer, sizeof(gPlayer));
@@ -2307,7 +2326,7 @@ void PlayerLoadSave::Load(void)
 
 void PlayerLoadSave::Save(void)
 {
-    Write(dword_21EFB0, sizeof(dword_21EFB0));
+    Write(gPlayerScores, sizeof(gPlayerScores));
     Write(&gNetPlayers, sizeof(gNetPlayers));
     Write(&gProfile, sizeof(gProfile));
     Write(&gPlayer, sizeof(gPlayer));

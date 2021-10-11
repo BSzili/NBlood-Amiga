@@ -69,5 +69,7 @@ char *g_defNamePtr = NULL;
 int CONTROL_BindsEnabled; // TODO remove
 //const char* s_buildRev = ""; // TODO remove
 
+uint32_t wrandomseed = 1;
+
 // JFBuild
 int nextvoxid = 0;

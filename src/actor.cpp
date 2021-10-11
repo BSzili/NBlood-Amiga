@@ -2552,7 +2552,7 @@ void actInit(bool bSaveLoad) {
             unk[pSprite->type - kDudeBase] = 1;
         }
         
-        gKillMgr.sub_2641C();
+        gKillMgr.CountTotalKills();
         ///////////////
 
         for (int i = 0; i < kDudeMax - kDudeBase; i++)
@@ -2884,7 +2884,7 @@ spritetype *actDropKey(spritetype *pSprite, int nType)
 spritetype *actDropFlag(spritetype *pSprite, int nType)
 {
     spritetype *pSprite2 = NULL;
-    if (pSprite && pSprite->statnum < kMaxStatus && (nType == 147 || nType == 148))
+    if (pSprite && pSprite->statnum < kMaxStatus && (nType == kItemFlagA || nType == kItemFlagB))
     {
         pSprite2 = actDropItem(pSprite, nType);
         if (pSprite2 && gGameOptions.nGameType == 3)
@@ -2962,7 +2962,7 @@ void actKillDude(int nKillerSprite, spritetype *pSprite, DAMAGE_TYPE damageType,
                         aiGenDudeNewState(pSprite, &genDudeBurnGoto);
                         actHealDude(pXSprite, dudeInfo[55].startHealth, dudeInfo[55].startHealth);
                         if (pXSprite->burnTime <= 0) pXSprite->burnTime = 1200;
-                        gDudeExtra[pSprite->extra].at0 = (int)gFrameClock + 360;
+                        gDudeExtra[pSprite->extra].clock = (int)gFrameClock + 360;
                         return;
                     }
 
@@ -3363,7 +3363,7 @@ void actKillDude(int nKillerSprite, spritetype *pSprite, DAMAGE_TYPE damageType,
     case kDudeSpiderBrown:
         if (pSprite->owner != -1) {
             spritetype *pOwner = &sprite[actSpriteOwnerToSpriteId(pSprite)];
-            gDudeExtra[pOwner->extra].at6.u1.at4--;
+            gDudeExtra[pOwner->extra].stats.birthCounter--;
         }
         
         if (Chance(0x4000) && nSeq == 3) sfxPlay3DSound(pSprite, 1805, -1, 0);
@@ -3373,7 +3373,7 @@ void actKillDude(int nKillerSprite, spritetype *pSprite, DAMAGE_TYPE damageType,
     case kDudeSpiderRed:
         if (pSprite->owner != -1) {
             spritetype *pOwner = &sprite[actSpriteOwnerToSpriteId(pSprite)];
-            gDudeExtra[pOwner->extra].at6.u1.at4--;
+            gDudeExtra[pOwner->extra].stats.birthCounter--;
         }
         
         if (Chance(0x4000) && nSeq == 3) sfxPlay3DSound(pSprite, 1805, -1, 0);
@@ -3383,7 +3383,7 @@ void actKillDude(int nKillerSprite, spritetype *pSprite, DAMAGE_TYPE damageType,
     case kDudeSpiderBlack:
         if (pSprite->owner != -1) {
             spritetype *pOwner = &sprite[actSpriteOwnerToSpriteId(pSprite)];
-            gDudeExtra[pOwner->extra].at6.u1.at4--;
+            gDudeExtra[pOwner->extra].stats.birthCounter--;
         }
         
         if (Chance(0x4000) && nSeq == 3) sfxPlay3DSound(pSprite, 1805, -1, 0);
@@ -5501,6 +5501,8 @@ void actProcessSprites(void)
         int nXSprite = pSprite->extra;
         if (nXSprite > 0) {
             XSPRITE *pXSprite = &xsprite[nXSprite];
+            if ((pXSprite->respawnPending > 0) && !VanillaMode()) // don't process currently respawning thing
+                continue;
             switch (pSprite->type) {
                 case kThingBloodBits:
                 case kThingBloodChunks:

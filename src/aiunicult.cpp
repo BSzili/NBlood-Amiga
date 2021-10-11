@@ -262,7 +262,7 @@ static void genDudeAttack1(int, int nXIndex) {
                         aiActivateDude(pSpawned, &xsprite[pSpawned->extra]);
                 }
 
-                gKillMgr.sub_263E0(1);
+                gKillMgr.AddCount(1);
                 pExtra->slave[pExtra->slaveCount++] = pSpawned->index;
                 if (!playGenDudeSound(pSprite, kGenDudeSndAttackNormal))
                     sfxPlay3DSoundCP(pSprite, 379, 1, 0, 0x10000 - Random3(0x3000));
@@ -1132,10 +1132,10 @@ bool playGenDudeSound(spritetype* pSprite, int mode) {
     // so we won't get a lot of annoying screams in the same time and ensure sound played in it's full length (if not interruptable)
     if (pExtra->sndPlaying && !sndInfo->interruptable) {
         for (int i = 0; i < 256; i++) {
-            if (Bonkle[i].atc <= 0) continue;
+            if (Bonkle[i].sfxId <= 0) continue;
             for (int a = 0; a < rand; a++) {
-                if (sndId + a == Bonkle[i].atc) {
-                    if (Bonkle[i].at0 <= 0) {
+                if (sndId + a == Bonkle[i].sfxId) {
+                    if (Bonkle[i].lChan <= 0) {
                         pExtra->sndPlaying = false;
                         break;
                     }
@@ -1308,7 +1308,6 @@ void scaleDamage(XSPRITE* pXSprite) {
                 case kThingPodFireBall:
                 case kThingNapalmBall:
                     curScale[kDmgBurn] = 32;
-                    curScale[kDmgExplode] -= 32;
                     break;
                 case kMissileLifeLeechRegular:
                     curScale[kDmgBurn] = 60 + Random(4);
@@ -1322,7 +1321,7 @@ void scaleDamage(XSPRITE* pXSprite) {
                 case kMissileFireballCerberus:
                 case kMissileFireballTchernobog:
                     curScale[kDmgBurn] = 50;
-                    curScale[kDmgExplode] = 32;
+                    curScale[kDmgExplode] -= 32;
                     curScale[kDmgFall] = 65 + Random(15);
                     break;
                 case kThingTNTBarrel:
@@ -1332,7 +1331,7 @@ void scaleDamage(XSPRITE* pXSprite) {
                 case kThingArmedTNTStick:
                 case kModernThingTNTProx:
                     curScale[kDmgBurn] -= 32;
-                    curScale[kDmgExplode] = 32;
+                    curScale[kDmgExplode] -= 32;
                     curScale[kDmgFall] = 65 + Random(15);
                     break;
                 case kMissileTeslaAlt:
@@ -1700,7 +1699,7 @@ spritetype* genDudeSpawn(XSPRITE* pXSource, spritetype* pSprite, int nDist) {
         pDude->yrepeat = pSource->yrepeat;
     }
 
-    gKillMgr.sub_263E0(1);
+    gKillMgr.AddCount(1);
     aiInitSprite(pDude);
     return pDude;
 }
@@ -1969,7 +1968,7 @@ bool genDudePrepare(spritetype* pSprite, int propId) {
     
     XSPRITE* pXSprite = &xsprite[pSprite->extra];
     GENDUDEEXTRA* pExtra = &gGenDudeExtra[pSprite->index]; pExtra->updReq[propId] = false;
-    
+
     switch (propId) {
         case kGenDudePropertyAll:
         case kGenDudePropertyInitVals:
@@ -2055,11 +2054,14 @@ bool genDudePrepare(spritetype* pSprite, int propId) {
                         } else if ((i - seqStartId) == kGenDudeSeqAttackPunch) {
                             pExtra->forcePunch = true; // required for those who don't have fire trigger in punch seq and for default animation
                             Seq* pSeq = NULL; DICTNODE* hSeq = gSysRes.Lookup(i, "SEQ");
-                            pSeq = (Seq*)gSysRes.Load(hSeq);
-                            for (int i = 0; i < pSeq->nFrames; i++) {
-                                if (!pSeq->frames[i].at5_5) continue;
-                                pExtra->forcePunch = false;
-                                break;
+                            if (hSeq) {
+                                
+                                pSeq = (Seq*)gSysRes.Load(hSeq);
+                                for (int i = 0; i < pSeq->nFrames; i++) {
+                                    if (!pSeq->frames[i].at5_5) continue;
+                                    pExtra->forcePunch = false;
+                                    break;
+                                }
                             }
                         }
                         break;
@@ -2079,7 +2081,7 @@ bool genDudePrepare(spritetype* pSprite, int propId) {
                         bool oldStatus = pExtra->canWalk;
                         pExtra->canWalk = gSysRes.Lookup(i, "SEQ");
                         if (oldStatus != pExtra->canWalk) {
-                            if (!spriRangeIsFine(pXSprite->target)) {
+                            if (pXSprite->target <= 0 || pXSprite->target >= kMaxSprites) {
                                 if (spriteIsUnderwater(pSprite, false)) aiGenDudeNewState(pSprite, &genDudeIdleW);
                                 else aiGenDudeNewState(pSprite, &genDudeIdleL);
                             } else if (pExtra->canWalk) {
@@ -2197,8 +2199,8 @@ void genDudePostDeath(spritetype* pSprite, DAMAGE_TYPE damageType, int damage) {
 void aiGenDudeInitSprite(spritetype* pSprite, XSPRITE* pXSprite) {
     switch (pSprite->type) {
         case kDudeModernCustom: {
-            DUDEEXTRA_at6_u1* pDudeExtraE = &gDudeExtra[pSprite->extra].at6.u1;
-            pDudeExtraE->at8 = pDudeExtraE->at0 = 0;
+            DUDEEXTRA_STATS* pDudeExtraE = &gDudeExtra[pSprite->extra].stats;
+            pDudeExtraE->active = 0;
             aiGenDudeNewState(pSprite, &genDudeIdleL);
             break;
         }

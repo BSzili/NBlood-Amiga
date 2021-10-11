@@ -598,4 +598,18 @@ static inline size_t strnlen(const char * s, size_t len) {
 }
 #endif
 
+extern uint32_t wrandomseed;
+
+// This aims to mimic Watcom C's implementation of rand
+static inline int32_t wrand(void)
+{
+	wrandomseed = 1103515245 * wrandomseed + 12345;
+	return (wrandomseed >> 16) & 0x7FFF;
+}
+
+static inline void wsrand(int seed)
+{
+	wrandomseed = seed;
+}
+
 #endif

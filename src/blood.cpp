@@ -1105,7 +1105,9 @@ void StartLevel(GAMEOPTIONS *gameOptions)
         ///////
         gGameOptions.weaponsV10x = gPacketStartGame.weaponsV10x;
         ///////
-
+    }
+    if (gGameOptions.nGameType > 0)
+    {
         gBlueFlagDropped = false;
         gRedFlagDropped = false;
         gView = gMe;
@@ -1120,9 +1122,6 @@ void StartLevel(GAMEOPTIONS *gameOptions)
         }
     }
     bVanilla = gDemo.at1 && gDemo.m_bLegacy;
-#ifdef EDUKE32
-    enginecompatibilitymode = ENGINE_19960925;//bVanilla;
-#endif
     memset(xsprite,0,sizeof(xsprite));
     memset(sprite,0,kMaxSprites*sizeof(spritetype));
     drawLoadingScreen();
@@ -1202,7 +1201,7 @@ void StartLevel(GAMEOPTIONS *gameOptions)
     evInit();
     for (int i = connecthead; i >= 0; i = connectpoint2[i])
     {
-        if (!(gameOptions->uGameFlags&1))
+        if (!(gameOptions->uGameFlags&1)) // if new game
         {
             if (numplayers == 1)
             {
@@ -1212,6 +1211,8 @@ void StartLevel(GAMEOPTIONS *gameOptions)
             }
             playerInit(i,0);
         }
+        else if ((gGameOptions.nGameType == 3) && !VanillaMode()) // if ctf mode and went to next level, reset scores
+            playerResetScores(i);
         playerStart(i, 1);
     }
     if (gameOptions->uGameFlags&1)
@@ -1219,6 +1220,13 @@ void StartLevel(GAMEOPTIONS *gameOptions)
         for (int i = connecthead; i >= 0; i = connectpoint2[i])
         {
             PLAYER *pPlayer = &gPlayer[i];
+            if (gHealthTemp[i] == 0) // if player is dead, reset player between levels
+            {
+                playerReset(pPlayer); // reset ammo, weapons, etc
+                if (pPlayer->pDudeInfo != NULL) // if dude info is available, reset health
+                    pPlayer->pXSprite->health = pPlayer->pDudeInfo->startHealth<<4;
+                continue;
+            }
             pPlayer->pXSprite->health &= 0xf000;
             pPlayer->pXSprite->health |= gHealthTemp[i];
             pPlayer->weaponQav = gPlayerTemp[i].weaponQav;
@@ -1262,7 +1270,7 @@ void StartLevel(GAMEOPTIONS *gameOptions)
     // viewSetMessage("");
     viewSetErrorMessage("");
     viewResizeView(gViewSize);
-    if (gGameOptions.nGameType == 3)
+    if ((gGameOptions.nGameType == 3) && VanillaMode())
         gGameMessageMgr.SetCoordinates(gViewX0S+1,gViewY0S+15);
     netWaitForEveryone(0);
     totalclock = 0;
@@ -1291,11 +1299,6 @@ void StartNetworkLevel(void)
         ///////
         gGameOptions.weaponsV10x = gPacketStartGame.weaponsV10x;
         ///////
-
-        gBlueFlagDropped = false;
-        gRedFlagDropped = false;
-        gView = gMe;
-        gViewIndex = myconnectindex;
 
         if (gPacketStartGame.userMap)
             levelAddUserMap(gPacketStartGame.userMapName);
@@ -2282,6 +2285,9 @@ int app_main(int argc, char const * const * argv)
     ctrlInit();
     timerInit(120);
     timerSetCallback(ClockStrobe);
+#ifdef EDUKE32
+    enginecompatibilitymode = ENGINE_19960925;
+#endif
     // PORT-TODO: CD audio init
 
     initprintf("Initializing network users\n");
@@ -2486,8 +2492,8 @@ RESTART:
         }
         //if (byte_148e29 && gStartNewGame)
         //{
-        //  gStartNewGame = 0;
-        //  gQuitGame = 1;
+        //	gStartNewGame = 0;
+        //	gQuitGame = 1;
         //}
         if (gStartNewGame)
             StartLevel(&gGameOptions);

@@ -246,8 +246,8 @@ extern bool gRedFlagDropped;
 
 extern PROFILE gProfile[kMaxPlayers];
 
-extern int         dword_21EFB0[kMaxPlayers];
-extern ClockTicks  dword_21EFD0[kMaxPlayers];
+extern int         gPlayerScores[kMaxPlayers];
+extern ClockTicks  gPlayerScoreTicks[kMaxPlayers];
 extern AMMOINFO    gAmmoInfo[];
 extern POWERUPINFO gPowerUpInfo[kMaxPowerUps];
 
@@ -301,6 +301,7 @@ void        playerSetGodMode(PLAYER *pPlayer, char bGodMode);
 void        playerResetInertia(PLAYER *pPlayer);
 void        playerCorrectInertia(PLAYER *pPlayer, vec3_t const *oldpos);
 void        playerStart(int nPlayer, int bNewLevel = 0);
+void        playerResetScores(int nPlayer);
 void        playerReset(PLAYER *pPlayer);
 void        playerInit(int nPlayer, unsigned int a2);
 char        sub_3A158(PLAYER *a1, spritetype *a2);
@@ -317,7 +318,7 @@ spritetype *playerFireThing(PLAYER *pPlayer, int a2, int a3, int thingType, int 
 void        playerFrag(PLAYER *pKiller, PLAYER *pVictim);
 void        FragPlayer(PLAYER *pPlayer, int nSprite);
 int         playerDamageArmor(PLAYER *pPlayer, DAMAGE_TYPE nType, int nDamage);
-spritetype *sub_40A94(PLAYER *pPlayer, int a2);
+spritetype *playerDropFlag(PLAYER *pPlayer, int a2);
 int         playerDamageSprite(int nSource, PLAYER *pPlayer, DAMAGE_TYPE nDamageType, int nDamage);
 int         UseAmmo(PLAYER *pPlayer, int nAmmoType, int nDec);
 void        sub_41250(PLAYER *pPlayer);

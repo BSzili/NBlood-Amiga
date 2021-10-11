@@ -252,7 +252,7 @@ void WeaponDraw(PLAYER *pPlayer, int a2, int x, int y, int a5)
         v4 = pQAV->at10 - pPlayer->weaponTimer;
     pQAV->x = x;
     pQAV->y = y;
-    int flags = 2 | kQavOrientationQ16 | RS_LERP;
+    int flags = 2 | kQavOrientationQ16/* | RS_LERP*/;
     int nInv = powerupCheck(pPlayer, kPwUpShadowCloak);
     if (nInv >= 120 * 8 || (nInv != 0 && ((int)totalclock & 32)))
     {
@@ -1772,7 +1772,7 @@ char WeaponFindNext(PLAYER *pPlayer, int *a2, char bDir)
 
 char WeaponFindLoaded(PLAYER *pPlayer, int *a2)
 {
-    char v4 = kWeaponPitchfork;
+    char weapon = kWeaponPitchfork;
     int v14 = 0;
     if (weaponModes[pPlayer->curWeapon].at0 > 1)
     {
@@ -1781,12 +1781,12 @@ char WeaponFindLoaded(PLAYER *pPlayer, int *a2)
             if (CheckAmmo(pPlayer, weaponModes[pPlayer->curWeapon].at4, 1))
             {
                 v14 = i;
-                v4 = pPlayer->curWeapon;
+                weapon = pPlayer->curWeapon;
                 break;
             }
         }
     }
-    if (v4 == kWeaponPitchfork)
+    if (weapon == kWeaponPitchfork)
     {
         int vc = 0;
         for (int i = 0; i < 14; i++)
@@ -1808,7 +1808,7 @@ char WeaponFindLoaded(PLAYER *pPlayer, int *a2)
     }
     else if (a2)
         *a2 = v14;
-    return v4;
+    return weapon;
 }
 
 char processSprayCan(PLAYER *pPlayer)
