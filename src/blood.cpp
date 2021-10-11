@@ -273,6 +273,7 @@ void PrecacheDude(spritetype *pSprite)
     case kDudeCultistShotgunProne:
     case kDudeCultistTesla:
     case kDudeCultistTNT:
+    case kDudeBurningCultist:
         // TODO separate the different types
         for (int i = 1000; i <= 1033; i++)
         {
@@ -286,12 +287,14 @@ void PrecacheDude(spritetype *pSprite)
     case kDudeZombieAxeBuried:
     case kDudeZombieAxeLaying:
     case kDudeZombieAxeNormal:
+    case kDudeBurningZombieAxe:
         for (int i = 1100; i <= 1109; i++)
         {
             PrecacheSound(i);
         }
         break;
     case kDudeZombieButcher:
+    case kDudeBurningZombieButcher:
         for (int i = 1200; i <= 1207; i++)
         {
             PrecacheSound(i);
@@ -325,6 +328,7 @@ void PrecacheDude(spritetype *pSprite)
         }
         break;
     case kDudeGillBeast:
+    case kDudeBurningBeast:
         for (int i = 1700; i <= 1705; i++)
         {
             PrecacheSound(i);
@@ -336,7 +340,6 @@ void PrecacheDude(spritetype *pSprite)
             PrecacheSound(i);
         }
         break;
-        fallthrough__;
     case kDudeSpiderBrown:
     case kDudeSpiderRed:
     case kDudeSpiderBlack:
@@ -398,12 +401,14 @@ void PrecacheDude(spritetype *pSprite)
         }
         break;
     case kDudeInnocent:
+    case kDudeBurningInnocent:
         for (int i = 7000; i <= 7009; i++)
         {
             PrecacheSound(i);
         }
         break;
     case kDudeTinyCaleb:
+    case kDudeBurningTinyCaleb:
         for (int i = 10000; i <= 10006; i++)
         {
             PrecacheSound(i);
@@ -883,7 +888,6 @@ static void caches(void)
 void PreloadCache(void)
 {
     char tempbuf[128];
-
     if (gDemo.at1)
         return;
 
@@ -905,8 +909,8 @@ void PreloadCache(void)
 #endif
     gSysRes.PrecacheSounds();
     gSoundRes.PrecacheSounds();
-if (MusicRestartsOnLoadToggle) {
-sndTryPlaySpecialMusic(MUS_LOADING); }
+    if (MusicRestartsOnLoadToggle)
+        sndTryPlaySpecialMusic(MUS_LOADING);
     PreloadTiles();
     ClockTicks clock = totalclock;
     int cnt = 0;
