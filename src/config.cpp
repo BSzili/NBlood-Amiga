@@ -378,9 +378,11 @@ void CONFIG_SetDefaults(void)
     //ud.config.ShowWeapons     = 0;
     SoundToggle     = 1;
     CDAudioToggle = 0;
-    MusicDevice = ASS_AutoDetect;
 #ifndef EDUKE32
     FXDevice = 0;
+    MusicDevice = 0;
+#else
+    MusicDevice = ASS_AutoDetect;
 #endif
     //ud.config.VoiceToggle     = 5;  // bitfield, 1 = local, 2 = dummy, 4 = other players in DM
     useprecache     = 1;
