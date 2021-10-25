@@ -1055,6 +1055,9 @@ CGameMenuItemBitmapLS::CGameMenuItemBitmapLS(const char *a1, int a2, int a3, int
     m_nX = a3;
     m_nY = a4;
     at28 = a5;
+#ifdef __AMIGA__
+    bCanSelect = 0;
+#endif
 }
 
 void CGameMenuItemBitmapLS::Draw(void)
