@@ -200,8 +200,10 @@ void ShutDown(void)
     KB_Shutdown();
     OSD_Cleanup();
     // PORT_TODO: Check argument
+#ifndef __AMIGA__
     if (syncstate)
         printf("A packet was lost! (syncstate)\n");
+#endif
     for (int i = 0; i < 10; i++)
     {
         if (gSaveGamePic[i])
