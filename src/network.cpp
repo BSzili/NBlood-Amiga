@@ -170,6 +170,7 @@ void netResetToSinglePlayer(void)
     gGameOptions.nGameType = 0;
     gNetMode = NETWORK_NONE;
     UpdateNetworkMenus();
+    gGameMenuMgr.Deactivate();
 }
 
 void netSendPacket(int nDest, char *pBuffer, int nSize)
@@ -225,7 +226,7 @@ void netSendPacketAll(char *pBuffer, int nSize)
             netSendPacket(p, pBuffer, nSize);
 }
 
-void sub_79760(void)
+void netResetState(void)
 {
     gNetFifoClock = gFrameClock = totalclock = 0;
     gNetFifoMasterTail = 0;
@@ -1044,7 +1045,7 @@ void netInitialize(bool bConsole)
 {
     netDeinitialize();
     memset(gPlayerReady, 0, sizeof(gPlayerReady));
-    sub_79760();
+    netResetState();
 #ifndef NETCODE_DISABLE
     char buffer[128];
     gNetENetServer = gNetENetClient = NULL;
@@ -1094,7 +1095,7 @@ void netInitialize(bool bConsole)
         {
             char buffer[128];
             sprintf(buffer, "Waiting for players (%i\\%i)", numplayers, gNetPlayers);
-            viewLoadingScreen(2518, "Network Game", NULL, buffer);
+            viewLoadingScreen(gMenuPicnum, "Network Game", NULL, buffer);
             videoNextPage();
         }
         while (numplayers < gNetPlayers)
@@ -1136,7 +1137,7 @@ void netInitialize(bool bConsole)
                     {
                         char buffer[128];
                         sprintf(buffer, "Waiting for players (%i\\%i)", numplayers, gNetPlayers);
-                        viewLoadingScreen(2518, "Network Game", NULL, buffer);
+                        viewLoadingScreen(gMenuPicnum, "Network Game", NULL, buffer);
                         videoNextPage();
                     }
                     break;
@@ -1168,7 +1169,7 @@ void netInitialize(bool bConsole)
                     {
                         char buffer[128];
                         sprintf(buffer, "Waiting for players (%i\\%i)", numplayers, gNetPlayers);
-                        viewLoadingScreen(2518, "Network Game", NULL, buffer);
+                        viewLoadingScreen(gMenuPicnum, "Network Game", NULL, buffer);
                         videoNextPage();
                     }
                     break;
@@ -1230,7 +1231,7 @@ void netInitialize(bool bConsole)
         initprintf("%s\n", buffer);
         if (!bConsole)
         {
-            viewLoadingScreen(2518, "Network Game", NULL, buffer);
+            viewLoadingScreen(gMenuPicnum, "Network Game", NULL, buffer);
             videoNextPage();
         }
         gNetENetClient = enet_host_create(NULL, 1, BLOOD_ENET_CHANNEL_MAX, 0, 0);
@@ -1255,7 +1256,7 @@ void netInitialize(bool bConsole)
         bool bWaitServer = true;
         if (!bConsole)
         {
-            viewLoadingScreen(2518, "Network Game", NULL, "Waiting for server response");
+            viewLoadingScreen(gMenuPicnum, "Network Game", NULL, "Waiting for server response");
             videoNextPage();
         }
         while (bWaitServer)
@@ -1526,7 +1527,7 @@ void netPlayerQuit(int nPlayer)
             gQuitGame = true;
             gRestartGame = true;
             gNetPlayers = 1;
-            //gQuitRequest = 1;
+            gQuitRequest = gNetMode == NETWORK_SERVER ? gQuitRequest : 2;
         }
     }
     else

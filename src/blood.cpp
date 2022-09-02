@@ -134,6 +134,7 @@ int gQuitRequest;
 bool gPaused;
 bool gSaveGameActive;
 int gCacheMiss;
+int gMenuPicnum = 2518; // default menu picnum
 
 enum gametokens
 {
@@ -182,6 +183,7 @@ void app_crashhandler(void)
     // NUKE-TODO:
 }
 
+extern "C" void M32RunScript(const char* s);
 void M32RunScript(const char *s)
 {
     UNREFERENCED_PARAMETER(s);
@@ -1078,7 +1080,7 @@ void StartLevel(GAMEOPTIONS *gameOptions)
         if (!(gGameOptions.uGameFlags&1))
             levelSetupOptions(gGameOptions.nEpisode, gGameOptions.nLevel);
         if (gEpisodeInfo[gGameOptions.nEpisode].cutALevel == gGameOptions.nLevel
-            && gEpisodeInfo[gGameOptions.nEpisode].cutsceneASmkPath)
+            && gEpisodeInfo[gGameOptions.nEpisode].cutsceneASmkPath[0])
             gGameOptions.uGameFlags |= 4;
         if ((gGameOptions.uGameFlags&4) && gDemo.at1 == 0 && !Bstrlen(gGameOptions.szUserMap))
             levelPlayIntroScene(gGameOptions.nEpisode);
@@ -1098,7 +1100,7 @@ void StartLevel(GAMEOPTIONS *gameOptions)
         gGameOptions.nItemSettings = gPacketStartGame.itemSettings;
         gGameOptions.nRespawnSettings = gPacketStartGame.respawnSettings;
         gGameOptions.bFriendlyFire = gPacketStartGame.bFriendlyFire;
-        gGameOptions.bKeepKeysOnRespawn = gPacketStartGame.bKeepKeysOnRespawn;
+        gGameOptions.bPlayerKeys = gPacketStartGame.bPlayerKeys;
         if (gPacketStartGame.userMap)
             levelAddUserMap(gPacketStartGame.userMapName);
         else
@@ -1124,8 +1126,6 @@ void StartLevel(GAMEOPTIONS *gameOptions)
         }
     }
     bVanilla = gDemo.at1 && gDemo.m_bLegacy;
-    memset(xsprite,0,sizeof(xsprite));
-    memset(sprite,0,kMaxSprites*sizeof(spritetype));
     drawLoadingScreen();
 #ifndef EDUKE32
     videoNextPage();
@@ -1262,7 +1262,7 @@ void StartLevel(GAMEOPTIONS *gameOptions)
     if (!bVanilla && !gMe->packSlots[1].isActive) // if diving suit is not active, turn off reverb sound effect
         sfxSetReverb(0);
     ambInit();
-    sub_79760();
+    netResetState();
     gCacheMiss = 0;
     gFrame = 0;
     gChokeCounter = 0;
@@ -1296,7 +1296,7 @@ void StartNetworkLevel(void)
         gGameOptions.nItemSettings = gPacketStartGame.itemSettings;
         gGameOptions.nRespawnSettings = gPacketStartGame.respawnSettings;
         gGameOptions.bFriendlyFire = gPacketStartGame.bFriendlyFire;
-        gGameOptions.bKeepKeysOnRespawn = gPacketStartGame.bKeepKeysOnRespawn;
+        gGameOptions.bPlayerKeys = gPacketStartGame.bPlayerKeys;
         
         ///////
         gGameOptions.weaponsV10x = gPacketStartGame.weaponsV10x;
@@ -2122,7 +2122,7 @@ int app_main(int argc, char const * const * argv)
         char *str = Bstrtolower(Xstrdup(gamefunctions[i]));
         hash_add(&h_gamefuncs,gamefunctions[i],i,0);
         hash_add(&h_gamefuncs,str,i,0);
-        Bfree(str);
+        Xfree(str);
     }
 #endif
     
@@ -2171,41 +2171,12 @@ int app_main(int argc, char const * const * argv)
     OSD_SetParameters(0, 0, 0, 12, 2, 12);
 #else
     OSD_SetVersion("Blood", 10, 0);
-    OSD_SetParameters(0, 0, 0, 12, 2, 12, OSD_ERROR, OSDTEXT_RED, gamefunctions[gamefunc_Show_Console][0] == '\0' ? OSD_PROTECTED : 0);
+    OSD_SetParameters(0, 0, 0, 12, 2, 12, OSD_ERROR, OSDTEXT_RED, OSDTEXT_DARKRED, gamefunctions[gamefunc_Show_Console][0] == '\0' ? OSD_PROTECTED : 0);
 #endif
     registerosdcommands();
 
 #ifdef EDUKE32
     auto const hasSetupFilename = strcmp(SetupFilename, SETUPFILENAME);
-
-    if (!hasSetupFilename)
-        Bsnprintf(buffer, ARRAY_SIZE(buffer), APPBASENAME "_cvars.cfg");
-    else
-    {
-        char const * const ext = strchr(SetupFilename, '.');
-        if (ext != nullptr)
-            Bsnprintf(buffer, ARRAY_SIZE(buffer), "%.*s_cvars.cfg", int(ext - SetupFilename), SetupFilename);
-        else
-            Bsnprintf(buffer, ARRAY_SIZE(buffer), "%s_cvars.cfg", SetupFilename);
-    }
-
-    if (OSD_Exec(buffer))
-    {
-        // temporary fallback to unadorned "settings.cfg"
-
-        if (!hasSetupFilename)
-            Bsnprintf(buffer, ARRAY_SIZE(buffer), "settings.cfg");
-        else
-        {
-            char const * const ext = strchr(SetupFilename, '.');
-            if (ext != nullptr)
-                Bsnprintf(buffer, ARRAY_SIZE(buffer), "%.*s_settings.cfg", int(ext - SetupFilename), SetupFilename);
-            else
-                Bsnprintf(buffer, ARRAY_SIZE(buffer), "%s_settings.cfg", SetupFilename);
-        }
-
-        OSD_Exec(buffer);
-    }
 #endif
 
     // Not neccessary ?
@@ -2257,6 +2228,9 @@ int app_main(int argc, char const * const * argv)
 
     levelLoadDefaults();
 
+    if (!Bstrcmp(pINISelected->zName, "CRYPTIC.INI")) // if currently selected cryptic passage
+        gMenuPicnum = 2046;
+
 #ifndef __AMIGA__
     loaddefinitionsfile(BLOODWIDESCREENDEF);
     loaddefinitions_game(BLOODWIDESCREENDEF, FALSE);
@@ -2282,14 +2256,44 @@ int app_main(int argc, char const * const * argv)
     LoadSaveSetup();
     LoadSavedInfo();
     gDemo.LoadDemoInfo();
-    initprintf("There are %d demo(s) in the loop\n", gDemo.at59ef);
+    initprintf("There are %d demo(s) in the loop\n", gDemo.nDemosFound);
     initprintf("Loading control setup\n");
     ctrlInit();
     timerInit(120);
     timerSetCallback(ClockStrobe);
 #ifdef EDUKE32
     enginecompatibilitymode = ENGINE_19960925;
+
+    if (!hasSetupFilename)
+        Bsnprintf(buffer, ARRAY_SIZE(buffer), APPBASENAME "_cvars.cfg");
+    else
+    {
+        char const * const ext = strchr(SetupFilename, '.');
+        if (ext != nullptr)
+            Bsnprintf(buffer, ARRAY_SIZE(buffer), "%.*s_cvars.cfg", int(ext - SetupFilename), SetupFilename);
+        else
+            Bsnprintf(buffer, ARRAY_SIZE(buffer), "%s_cvars.cfg", SetupFilename);
+    }
+
+    if (OSD_Exec(buffer))
+    {
+        // temporary fallback to unadorned "settings.cfg"
+
+        if (!hasSetupFilename)
+            Bsnprintf(buffer, ARRAY_SIZE(buffer), "settings.cfg");
+        else
+        {
+            char const * const ext = strchr(SetupFilename, '.');
+            if (ext != nullptr)
+                Bsnprintf(buffer, ARRAY_SIZE(buffer), "%.*s_settings.cfg", int(ext - SetupFilename), SetupFilename);
+            else
+                Bsnprintf(buffer, ARRAY_SIZE(buffer), "%s_settings.cfg", SetupFilename);
+        }
+
+        OSD_Exec(buffer);
+    }
 #endif
+
     // PORT-TODO: CD audio init
 
     initprintf("Initializing network users\n");
@@ -2317,7 +2321,7 @@ int app_main(int argc, char const * const * argv)
         credLogosDos();
     scrSetDac();
 RESTART:
-    sub_79760();
+    netResetState();
     gViewIndex = myconnectindex;
     gMe = gView = &gPlayer[myconnectindex];
     netBroadcastPlayerInfo(myconnectindex);
@@ -2337,7 +2341,7 @@ RESTART:
         goto RESTART;
     }
     UpdateNetworkMenus();
-    if (!gDemo.at0 && gDemo.at59ef > 0 && gGameOptions.nGameType == 0 && !bNoDemo)
+    if (!gDemo.at0 && gDemo.nDemosFound > 0 && gGameOptions.nGameType == 0 && !bNoDemo)
         gDemo.SetupPlayback(NULL);
     viewSetCrosshairColor(CrosshairColors.r, CrosshairColors.g, CrosshairColors.b);
     gQuitGame = 0;
@@ -2350,7 +2354,7 @@ RESTART:
     }
     else if (gDemo.at1 && !bAddUserMap && !bNoDemo)
         gDemo.Playback();
-    if (gDemo.at59ef > 0)
+    if (gDemo.nDemosFound > 0)
         gGameMenuMgr.Deactivate();
     if (!bAddUserMap && !gGameStarted)
     {
@@ -2433,7 +2437,7 @@ RESTART:
             if (bDraw)
             {
                 videoClearScreen(0);
-                rotatesprite(160<<16,100<<16,65536,0,2518,0,0,0x4a,0,0,xdim-1,ydim-1);
+                rotatesprite(160<<16,100<<16,65536,0,gMenuPicnum,gGameMenuMgr.m_bActive ? 40 : 0,0,0x4a,0,0,xdim-1,ydim-1);
             }
             if (gQuitRequest && !gQuitGame)
                 netBroadcastMyLogoff(gQuitRequest == 2);
@@ -2526,7 +2530,7 @@ RESTART:
         }
         if (gGameOptions.nGameType != 0)
         {
-            if (!gDemo.at0 && gDemo.at59ef > 0 && gGameOptions.nGameType == 0 && !bNoDemo)
+            if (!gDemo.at0 && gDemo.nDemosFound > 0 && gGameOptions.nGameType == 0 && !bNoDemo)
                 gDemo.NextDemo();
             videoSetViewableArea(0,0,xdim-1,ydim-1);
             scrSetDac();
@@ -3209,10 +3213,10 @@ bool AddINIFile(const char *pzFile, bool bForce = false)
         if (findfrompath(pzFile, &pzFN)) return false; // failed to resolve the filename
         if (Bstat(pzFN, &st))
         {
-            Bfree(pzFN);
+            Xfree(pzFN);
             return false;
         } // failed to stat the file
-        Bfree(pzFN);
+        Xfree(pzFN);
         IniFile *pTempIni = new IniFile(pzFile);
         if (!pTempIni->FindSection("Episode1"))
         {

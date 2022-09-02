@@ -135,6 +135,9 @@ void LoadSave::LoadGame(char *pzFile)
 #ifdef YAX_ENABLE
     yax_update(numyaxbunches > 0 ? 2 : 1);
 #endif
+#ifdef EDUKE32
+    calc_sector_reachability();
+#endif
     memset(myMinLag, 0, sizeof(myMinLag));
     otherMinLag = 0;
     myMaxLag = 0;
@@ -416,7 +419,7 @@ void MyLoadSave::Load(void)
 
     *tileSetupSky(0) = skyInfo;
 #endif
-    gCheatMgr.sub_5BCF4();
+    gCheatMgr.ResetCheats();
 
 }
 

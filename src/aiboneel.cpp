@@ -74,15 +74,7 @@ AISTATE eelDodgeDownLeft = { kAiStateMove, 0, -1, 90, NULL, MoveDodgeDown, NULL,
 static void BiteSeqCallback(int, int nXSprite)
 {
     XSPRITE *pXSprite = &xsprite[nXSprite];
-    spritetype *pSprite = &sprite[pXSprite->reference];
-    spritetype *pTarget = &sprite[pXSprite->target];
-    int dx = Cos(pSprite->ang) >> 16;
-    int dy = Sin(pSprite->ang) >> 16;
-    dassert(pSprite->type >= kDudeBase && pSprite->type < kDudeMax);
-    DUDEINFO *pDudeInfo = getDudeInfo(pSprite->type);
-    DUDEINFO *pDudeInfoT = getDudeInfo(pTarget->type);
-    int height = (pSprite->yrepeat*pDudeInfo->eyeHeight)<<2;
-    int height2 = (pTarget->yrepeat*pDudeInfoT->eyeHeight)<<2;
+    spritetype* pSprite = &sprite[pXSprite->reference];
     /*
      * workaround for 
      * pXSprite->target >= 0 && pXSprite->target < kMaxSprites in file NBlood/source/blood/src/aiboneel.cpp at line 86
@@ -95,6 +87,16 @@ static void BiteSeqCallback(int, int nXSprite)
         aiNewState(pSprite, pXSprite, &eelSearch);
         return;
     }
+    
+    spritetype *pTarget = &sprite[pXSprite->target];
+    int dx = Cos(pSprite->ang) >> 16;
+    int dy = Sin(pSprite->ang) >> 16;
+    dassert(pSprite->type >= kDudeBase && pSprite->type < kDudeMax);
+    DUDEINFO *pDudeInfo = getDudeInfo(pSprite->type);
+    DUDEINFO *pDudeInfoT = getDudeInfo(pTarget->type);
+    int height = (pSprite->yrepeat*pDudeInfo->eyeHeight)<<2;
+    int height2 = (pTarget->yrepeat*pDudeInfoT->eyeHeight)<<2;
+
     dassert(pXSprite->target >= 0 && pXSprite->target < kMaxSprites);
     actFireVector(pSprite, 0, 0, dx, dy, height2-height, kVectorBoneelBite);
 }

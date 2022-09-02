@@ -40,7 +40,7 @@ extern int g_useCwd;
 
 #define BLOODWIDESCREENDEF "blood_widescreen.def"
 
-#define BYTEVERSION 103
+#define BYTEVERSION 104
 #define EXEVERSION 101
 
 void _SetErrorLoc(const char *pzFile, int nLine);
@@ -108,6 +108,8 @@ void _consoleSysMsg(const char* pMessage, ...);
 #define kDmgSpirit 5
 #define kDmgElectric 6
 #define kDmgMax 7
+
+#define kCauserGame (kMaxSprites - 1)
 
 // MEDIUM /////////////////////////////////////////////////////
 enum {
@@ -502,7 +504,9 @@ kAiStatePatrolMax,
 #define kAng90 512
 #define kAng120 682
 #define kAng180 1024
+#define kAng270 1536
 #define kAng360 2048
+#define kAngMask 2047
 
 
 // -------------------------------

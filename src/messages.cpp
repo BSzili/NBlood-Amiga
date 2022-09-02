@@ -126,9 +126,9 @@ void SetWeapons(bool stat)
         if (!VanillaMode())
         {
             // Keep the pitchfork to avoid freeze
-            gMe->hasWeapon[1] = 1;
-            gMe->curWeapon = 0;
-            gMe->nextWeapon = 1;
+            gMe->hasWeapon[kWeaponPitchfork] = 1;
+            gMe->curWeapon = kWeaponNone;
+            gMe->nextWeapon = kWeaponPitchfork;
         }
         viewSetMessage("You have no weapons.");
     }
@@ -376,13 +376,13 @@ void CGameMessageMgr::Display(void)
             for (int i = 0; i < initialNrOfDisplayedMsgs; i++)
             {
                 messageStruct* pMessage = &messages[(initialMessagesIndex+i)%kMessageLogSize];
-                if (pMessage->lastTickWhenVisible < gFrameClock)
+                if (pMessage->lastTickWhenVisible <= gFrameClock)
                 {
                     messagesIndex = (messagesIndex+1)%kMessageLogSize;
                     numberOfDisplayedMessages--;
                     continue;
                 }
-                viewDrawText(nFont, pMessage->text, x, y, shade, pMessage->pal, 0, false, 256);
+                viewDrawText(nFont, pMessage->text, x+1, y, shade, pMessage->pal, 0, false, 256);
                 if (gViewMode == 3)
                 {
                     int height;
@@ -428,7 +428,7 @@ void CGameMessageMgr::Display(void)
             for (int i = 0; i < messagesToDisplayCount; i++)
             {
                 messageStruct* pMessage = messagesToDisplay[i];
-                viewDrawText(nFont, pMessage->text, x, y, shade, pMessage->pal, 0, false, 256);
+                viewDrawText(nFont, pMessage->text, x+1, y, shade, pMessage->pal, 0, false, 256);
                 if (gViewMode == 3)
                 {
                     int height;
@@ -444,7 +444,7 @@ void CGameMessageMgr::Display(void)
 #endif
     if (at9 != 0)
     {
-        at9 = fontHeight*at9/kTicRate;
+        at9 = fontHeight*atd/kTicRate;
         atd += gFrameTicks;
     }
 }
@@ -908,9 +908,9 @@ void CCheatMgr::Process(CCheatMgr::CHEATCODE nCheatCode, char* pzArgs)
         SetWooMode(true);
         powerupActivate(gMe, kPwUpDeliriumShroom);
         gMe->pXSprite->health = 16;
-        gMe->hasWeapon[1] = 1;
-        gMe->curWeapon = 0;
-        gMe->nextWeapon = 1;
+        gMe->hasWeapon[kWeaponPitchfork] = 1;
+        gMe->curWeapon = kWeaponNone;
+        gMe->nextWeapon = kWeaponPitchfork;
         break;
     default:
         break;
@@ -918,7 +918,7 @@ void CCheatMgr::Process(CCheatMgr::CHEATCODE nCheatCode, char* pzArgs)
     m_bPlayerCheated = true;
 }
 
-void CCheatMgr::sub_5BCF4(void)
+void CCheatMgr::ResetCheats(void)
 {
     m_bPlayerCheated = 0;
     playerSetGodMode(gMe, 0);

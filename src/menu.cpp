@@ -82,9 +82,10 @@ void SetVideoMode(CGameMenuItemChain *);
 void SetWidescreen(CGameMenuItemZBool *);
 void SetFOV(CGameMenuItemSlider *);
 void UpdateVideoModeMenuFrameLimit(CGameMenuItemZCycle *pItem);
-void UpdateVideoModeMenuFPSOffset(CGameMenuItemSlider *pItem);
+//void UpdateVideoModeMenuFPSOffset(CGameMenuItemSlider *pItem);
 void UpdateVideoColorMenu(CGameMenuItemSliderFloat *);
 void ResetVideoColor(CGameMenuItemChain *);
+void ClearUserMapNameOnLevelChange(CGameMenuItemZCycle *);
 #ifdef USE_OPENGL
 void SetupVideoPolymostMenu(CGameMenuItemChain *);
 #endif
@@ -170,6 +171,12 @@ const char *pzShowWeaponStrings[] = {
     "SPRITE",
     "VOXEL"
 #endif
+};
+
+const char *zPlayerKeysStrings[] = {
+    "LOST ON DEATH",
+    "KEPT ON RESPAWN",
+    "SHARED"
 };
 
 char zUserMapName[BMAX_PATH];
@@ -274,13 +281,13 @@ CGameMenuItemChain itemOption1("CONTROLS...", 3, 0, 40, 320, 1, &menuControls, -
 #endif
 CGameMenuItemSlider sliderDetail("DETAIL:", 3, 66, 50, 180, gDetail, 0, 4, 1, SetDetail, -1, -1);
 CGameMenuItemSlider sliderGamma("GAMMA:", 3, 66, 60, 180, gGamma, 0, 15, 2, SetGamma, -1, -1);
-CGameMenuItemSlider sliderMusic("MUSIC:", 3, 66, 70, 180, MusicVolume, 0, 256, 48, SetMusicVol, -1, -1);
-CGameMenuItemSlider sliderSound("SOUND:", 3, 66, 80, 180, FXVolume, 0, 256, 48, SetSoundVol, -1, -1);
+CGameMenuItemSlider sliderMusic("MUSIC:", 3, 66, 70, 180, MusicVolume, 0, 255, 48, SetMusicVol, -1, -1);
+CGameMenuItemSlider sliderSound("SOUND:", 3, 66, 80, 180, FXVolume, 0, 255, 48, SetSoundVol, -1, -1);
 #ifndef EDUKE32
 void UpdateCDToggle(CGameMenuItemZBool *pItem);
 CGameMenuItemZBool sliderCDAudio("CD AUDIO:", 3, 66, 90, 180, false, UpdateCDToggle, NULL, NULL);
 #else
-CGameMenuItemSlider sliderCDAudio("CD AUDIO:", 3, 66, 90, 180, CDVolume, 0, 256, 48, SetCDVol, -1, -1);
+CGameMenuItemSlider sliderCDAudio("CD AUDIO:", 3, 66, 90, 180, CDVolume, 0, 255, 48, SetCDVol, -1, -1);
 #endif
 CGameMenuItemZBool bool3DAudio("3D AUDIO:", 3, 66, 100, 180, gStereo, SetMonoStereo, NULL, NULL);
 CGameMenuItemZBool boolCrosshair("CROSSHAIR:", 3, 66, 110, 180, gAimReticle, SetCrosshair, NULL, NULL);
@@ -299,7 +306,7 @@ CGameMenuItemTitle itemControlsTitle("CONTROLS", 1, 160, 20, 2038);
 #ifndef EDUKE32
 CGameMenuItemSlider sliderMouseSpeed("Mouse Sensitivity:", 1, 10, 70, 300, gMouseSensitivity, 0, 0x20000, 0x1000, SetMouseSensitivity, -1,-1);
 #else
-CGameMenuItemSliderFloat sliderMouseSpeed("Mouse Sensitivity:", 1, 10, 70, 300, CONTROL_MouseSensitivity, 0.5f, 16.f, 0.5f, SetMouseSensitivity, -1,-1);
+CGameMenuItemSliderFloat sliderMouseSpeed("Mouse Sensitivity:", 1, 10, 70, 300, CONTROL_MouseSensitivity, .1f, 100.f, 50.f, SetMouseSensitivity, -1,-1);
 #endif
 CGameMenuItemZBool boolMouseFlipped("Invert Mouse Aim:", 1, 10, 90, 300, gMouseAimingFlipped, SetMouseAimFlipped, NULL, NULL);
 CGameMenuItemSlider sliderTurnSpeed("Key Turn Speed:", 1, 10, 110, 300, gTurnSpeed, 64, 128, 4, SetTurnSpeed, -1, -1);
@@ -351,16 +358,16 @@ CGameMenu menuMultiUserMaps;
 CGameMenuItemTitle itemNetStartUserMapTitle("USER MAP", 1, 160, 20, 2038);
 CGameMenuFileSelect menuMultiUserMap("", 3, 0, 0, 0, "./", "*.map", zUserMapName);
 
-CGameMenuItemTitle itemNetStartTitle("MULTIPLAYER", 1, 160, 20, 2038);
+CGameMenuItemMultiplayerTitle itemNetStartTitle("MULTIPLAYER", 1, 160, 20, 2038);
 CGameMenuItemZCycle itemNetStart1("GAME:", 3, 66, 60, 180, 0, 0, zNetGameTypes, 3, 0);
 CGameMenuItemZCycle itemNetStart2("EPISODE:", 3, 66, 70, 180, 0, SetupNetLevels, NULL, 0, 0);
-CGameMenuItemZCycle itemNetStart3("LEVEL:", 3, 66, 80, 180, 0, NULL, NULL, 0, 0);
+CGameMenuItemZCycle itemNetStart3("LEVEL:", 3, 66, 80, 180, 0, ClearUserMapNameOnLevelChange, NULL, 0, 0);
 CGameMenuItemZCycle itemNetStart4("DIFFICULTY:", 3, 66, 90, 180, 0, 0, zDiffStrings, 5, 0);
 CGameMenuItemZCycle itemNetStart5("MONSTERS:", 3, 66, 100, 180, 0, 0, zMonsterStrings, 3, 0);
 CGameMenuItemZCycle itemNetStart6("WEAPONS:", 3, 66, 110, 180, 0, 0, zWeaponStrings, 4, 0);
 CGameMenuItemZCycle itemNetStart7("ITEMS:", 3, 66, 120, 180, 0, 0, zItemStrings, 3, 0);
 CGameMenuItemZBool itemNetStart8("FRIENDLY FIRE:", 3, 66, 130, 180, true, 0, NULL, NULL);
-CGameMenuItemZBool itemNetStart9("KEEP KEYS ON RESPAWN:", 3, 66, 140, 180, false, 0, NULL, NULL);
+CGameMenuItemZCycle itemNetStart9("PLAYER KEYS:", 3, 66, 140, 180, 0, 0, zPlayerKeysStrings, 3, 0);
 CGameMenuItemZBool itemNetStart10("V1.0x WEAPONS BALANCE:", 3, 66, 150, 180, false, 0, NULL, NULL);
 CGameMenuItemChain itemNetStart11("USER MAP", 3, 66, 160, 180, 0, &menuMultiUserMaps, 0, NULL, 0);
 CGameMenuItemChain itemNetStart12("START GAME", 1, 66, 175, 280, 0, 0, -1, StartNetGame, 0);
@@ -368,9 +375,9 @@ CGameMenuItemChain itemNetStart12("START GAME", 1, 66, 175, 280, 0, 0, -1, Start
 CGameMenuItemText itemLoadingText("LOADING...", 1, 160, 100, 1);
 
 CGameMenuItemTitle itemSoundsTitle("SOUNDS", 1, 160, 20, 2038);
-CGameMenuItemSlider itemSoundsMusic("MUSIC:", 3, 40, 60, 180, MusicVolume, 0, 256, 48, SetMusicVol, -1, -1);
-CGameMenuItemSlider itemSoundsSound("SOUND:", 3, 40, 70, 180, FXVolume, 0, 256, 48, SetSoundVol, -1, -1);
-CGameMenuItemSlider itemSoundsCDAudio("CD AUDIO:", 3, 40, 80, 180, CDVolume, 0, 256, 48, SetCDVol, -1, -1);
+CGameMenuItemSlider itemSoundsMusic("MUSIC:", 3, 40, 60, 180, MusicVolume, 0, 255, 48, SetMusicVol, -1, -1);
+CGameMenuItemSlider itemSoundsSound("SOUND:", 3, 40, 70, 180, FXVolume, 0, 255, 48, SetSoundVol, -1, -1);
+CGameMenuItemSlider itemSoundsCDAudio("CD AUDIO:", 3, 40, 80, 180, CDVolume, 0, 255, 48, SetCDVol, -1, -1);
 CGameMenuItemZBool itemSounds3DAudio("3D SOUND:", 3, 40, 90, 180, gStereo, SetMonoStereo, NULL, NULL);
 
 CGameMenuItemTitle itemQuitTitle("QUIT", 1, 160, 20, 2038);
@@ -556,7 +563,7 @@ CGameMenuItemZBool itemOptionsDisplayModeFullscreen("FULLSCREEN:", 3, 66, 80, 18
 #ifdef EDUKE32
 CGameMenuItemZCycle itemOptionsDisplayModeVSync("VSYNC:", 3, 66, 90, 180, 0, NULL, pzVSyncStrings, 3, 0);
 CGameMenuItemZCycle itemOptionsDisplayModeFrameLimit("FRAMERATE LIMIT:", 3, 66, 100, 180, 0, UpdateVideoModeMenuFrameLimit, pzFrameLimitStrings, 8, 0);
-CGameMenuItemSlider itemOptionsDisplayModeFPSOffset("FPS OFFSET:", 3, 66, 110, 180, 0, -10, 10, 1, UpdateVideoModeMenuFPSOffset, -1, -1, kMenuSliderValue);
+// CGameMenuItemSlider itemOptionsDisplayModeFPSOffset("FPS OFFSET:", 3, 66, 110, 180, 0, -10, 10, 1, UpdateVideoModeMenuFPSOffset, -1, -1, kMenuSliderValue);
 #endif
 CGameMenuItemChain itemOptionsDisplayModeApply("APPLY CHANGES", 3, 66, 125, 180, 0, NULL, 0, SetVideoMode, 0);
 
@@ -703,7 +710,7 @@ CGameMenuItemZCycle itemOptionsSoundSampleRate("SAMPLE RATE:", 3, 66, 110, 180, 
 #ifndef EDUKE32
 CGameMenuItemSlider itemOptionsSoundNumVoices("VOICES:", 3, 66, 120, 180, NumVoices, 4, 32, 4, UpdateNumVoices, -1, -1, kMenuSliderValue);
 #else
-CGameMenuItemSlider itemOptionsSoundNumVoices("VOICES:", 3, 66, 120, 180, NumVoices, 16, 256, 16, UpdateNumVoices, -1, -1, kMenuSliderValue);
+CGameMenuItemSlider itemOptionsSoundNumVoices("VOICES:", 3, 66, 120, 180, NumVoices, 16, 255, 16, UpdateNumVoices, -1, -1, kMenuSliderValue);
 #endif
 CGameMenuItemZBool itemOptionsSoundCDToggle("REDBOOK AUDIO:", 3, 66, 130, 180, false, UpdateCDToggle, NULL, NULL);
 #ifdef EDUKE32
@@ -745,8 +752,13 @@ CGameMenuItemChain itemOptionsControlKeyboardResetClassic("Reset Keys (classic).
 
 void SetMouseAimMode(CGameMenuItemZBool *pItem);
 void SetMouseVerticalAim(CGameMenuItemZBool *pItem);
-void SetMouseXScale(CGameMenuItemSlider *pItem);
-void SetMouseYScale(CGameMenuItemSlider *pItem);
+#ifndef EDUKE32
+void SetMouseXSensitivity(CGameMenuItemSlider *pItem);
+void SetMouseYSensitivity(CGameMenuItemSlider *pItem);
+#else
+void SetMouseXSensitivity(CGameMenuItemSliderFloat *pItem);
+void SetMouseYSensitivity(CGameMenuItemSliderFloat*pItem);
+#endif
 
 void PreDrawControlMouse(CGameMenuItem *pItem);
 
@@ -757,13 +769,18 @@ CGameMenuItemChain itemOptionsControlMouseButton("BUTTON ASSIGNMENT", 3, 66, 60,
 #ifndef EDUKE32
 CGameMenuItemSlider itemOptionsControlMouseSensitivity("SENSITIVITY:", 3, 66, 70, 180, &gMouseSensitivity, 0, 0x20000, 0x1000, SetMouseSensitivity, -1, -1, kMenuSliderSensitivity);
 #else
-CGameMenuItemSliderFloat itemOptionsControlMouseSensitivity("SENSITIVITY:", 3, 66, 70, 180, &CONTROL_MouseSensitivity, 0.5f, 16.f, 0.5f, SetMouseSensitivity, -1, -1, kMenuSliderValue);
+CGameMenuItemSliderFloat itemOptionsControlMouseSensitivity("SENSITIVITY:", 3, 66, 70, 180, &CONTROL_MouseSensitivity, 1.f, 50.f, 1.f, SetMouseSensitivity, -1, -1, kMenuSliderValue);
 #endif
 CGameMenuItemZBool itemOptionsControlMouseAimFlipped("INVERT AIMING:", 3, 66, 80, 180, false, SetMouseAimFlipped, NULL, NULL);
 CGameMenuItemZBool itemOptionsControlMouseAimMode("AIMING TYPE:", 3, 66, 90, 180, false, SetMouseAimMode, "HOLD", "TOGGLE");
 CGameMenuItemZBool itemOptionsControlMouseVerticalAim("VERTICAL AIMING:", 3, 66, 100, 180, false, SetMouseVerticalAim, NULL, NULL);
-CGameMenuItemSlider itemOptionsControlMouseXScale("X-SCALE:", 3, 66, 110, 180, 0, 0, 65536, 1024, SetMouseXScale, -1, -1, kMenuSliderQ16);
-CGameMenuItemSlider itemOptionsControlMouseYScale("Y-SCALE:", 3, 66, 120, 180, 0, 0, 65536, 1024, SetMouseYScale, -1, -1, kMenuSliderQ16);
+#ifndef EDUKE32
+CGameMenuItemSlider itemOptionsControlMouseXSensitivity("HORIZ SENS:", 3, 66, 110, 180, 0, 0, 65536, 1024, SetMouseXSensitivity, -1, -1, kMenuSliderQ16);
+CGameMenuItemSlider itemOptionsControlMouseYSensitivity("VERT SENS:", 3, 66, 120, 180, 0, 0, 65536, 1024, SetMouseYSensitivity, -1, -1, kMenuSliderQ16);
+#else
+CGameMenuItemSliderFloat itemOptionsControlMouseXSensitivity("HORIZ SENS:", 3, 66, 110, 180, &CONTROL_MouseAxesSensitivity[0], 1.f, 50.f, 1.f, SetMouseXSensitivity, -1, -1, kMenuSliderValue);
+CGameMenuItemSliderFloat itemOptionsControlMouseYSensitivity("VERT SENS:", 3, 66, 120, 180, &CONTROL_MouseAxesSensitivity[1], 1.f, 50.f, 1.f, SetMouseYSensitivity, -1, -1, kMenuSliderValue);
+#endif
 
 #ifndef EDUKE32
 void SetupJoystickButtonMenu(CGameMenuItemChain *pItem);
@@ -814,7 +831,7 @@ void NetworkHostGame(CGameMenuItemChain *pItem);
 void NetworkJoinGame(CGameMenuItemChain *pItem);
 
 char zNetAddressBuffer[16] = "localhost";
-char zNetPortBuffer[6];
+char zNetPortBuffer[6] = "23513";
 
 CGameMenuItemTitle itemNetworkTitle("MULTIPLAYER", 1, 160, 20, 2038);
 CGameMenuItemChain itemNetworkHost("HOST A GAME", 1, 0, 80, 320, 1, &menuNetworkHost, -1, SetupNetworkHostMenu, 0);
@@ -973,19 +990,29 @@ void SetupEpisodeMenu(void)
     menuEpisode.Add(&itemEpisodesTitle, false);
     int height;
     gMenuTextMgr.GetFontInfo(1, NULL, NULL, &height);
+    int nOffset = 100;
+    for (int i = 0; i < gEpisodeCount; i++)
+    {
+        EPISODEINFO *pEpisode = &gEpisodeInfo[i];
+        if (!pEpisode->bloodbath || gGameOptions.nGameType != 0)
+            nOffset -= 10;
+    }
+    nOffset = max(min(nOffset, 55), 35);
     int j = 0;
     for (int i = 0; i < gEpisodeCount; i++)
     {
         EPISODEINFO *pEpisode = &gEpisodeInfo[i];
         if (!pEpisode->bloodbath || gGameOptions.nGameType != 0)
         {
+            if (j >= ARRAY_SSIZE(itemEpisodes))
+                ThrowError("Too many ini episodes to display (max %d).\n", ARRAY_SSIZE(itemEpisodes));
             CGameMenuItemChain7F2F0 *pEpisodeItem = &itemEpisodes[j];
             pEpisodeItem->m_nFont = 1;
             pEpisodeItem->m_nX = 0;
             pEpisodeItem->m_nWidth = 320;
             pEpisodeItem->at20 = 1;
             pEpisodeItem->m_pzText = pEpisode->title;
-            pEpisodeItem->m_nY = 55+(height+8)*j;
+            pEpisodeItem->m_nY = nOffset+(height+8)*j;
             pEpisodeItem->at34 = i;
             pEpisodeItem = &itemEpisodes[j];
             pEpisodeItem->at24 = &menuDifficulty;
@@ -1001,7 +1028,10 @@ void SetupEpisodeMenu(void)
         }
     }
 
-    itemUserMap.m_nY = 55+(height+8)*j;
+    if (j < 5) // if menu slots are not all filled, add space for user maps item
+        itemUserMap.m_nY = 50+(height+8)*5;
+    else
+        itemUserMap.m_nY = nOffset+(height+8)*j;
     menuEpisode.Add(&itemUserMap, false);
     menuEpisode.Add(&itemBloodQAV, false);
 
@@ -1159,6 +1189,7 @@ void SetupLoadGameMenu(void)
     menuLoadGame.Add(&itemLoadGame9, false);
     menuLoadGame.Add(&itemLoadGame10, false);
     menuLoadGame.Add(&itemLoadGamePic, false);
+    itemLoadGamePic.at28 = gMenuPicnum;
     itemLoadGame1.at35 = 0;
     itemLoadGame2.at35 = 0;
     itemLoadGame3.at35 = 0;
@@ -1377,7 +1408,7 @@ void SetupOptionsMenu(void)
 #endif
 #ifdef EDUKE32
     menuOptionsDisplayMode.Add(&itemOptionsDisplayModeFrameLimit, false);
-    menuOptionsDisplayMode.Add(&itemOptionsDisplayModeFPSOffset, false);
+    //menuOptionsDisplayMode.Add(&itemOptionsDisplayModeFPSOffset, false);
 #endif
     menuOptionsDisplayMode.Add(&itemOptionsDisplayModeApply, false);
     menuOptionsDisplayMode.Add(&itemBloodQAV, false);
@@ -1387,7 +1418,7 @@ void SetupOptionsMenu(void)
 #endif
     itemOptionsDisplayModeFullscreen.pPreDrawCallback = PreDrawVideoModeMenu;
 #ifdef EDUKE32
-    itemOptionsDisplayModeFPSOffset.pPreDrawCallback = PreDrawVideoModeMenu;
+    //itemOptionsDisplayModeFPSOffset.pPreDrawCallback = PreDrawVideoModeMenu;
 #endif
 
     menuOptionsDisplayColor.Add(&itemOptionsDisplayColorTitle, false);
@@ -1473,8 +1504,8 @@ void SetupOptionsMenu(void)
     menuOptionsControlMouse.Add(&itemOptionsControlMouseAimFlipped, false);
     menuOptionsControlMouse.Add(&itemOptionsControlMouseAimMode, false);
     menuOptionsControlMouse.Add(&itemOptionsControlMouseVerticalAim, false);
-    menuOptionsControlMouse.Add(&itemOptionsControlMouseXScale, false);
-    menuOptionsControlMouse.Add(&itemOptionsControlMouseYScale, false);
+    menuOptionsControlMouse.Add(&itemOptionsControlMouseXSensitivity, false);
+    menuOptionsControlMouse.Add(&itemOptionsControlMouseYSensitivity, false);
     menuOptionsControlMouse.Add(&itemBloodQAV, false);
 
     itemOptionsControlMouseVerticalAim.pPreDrawCallback = PreDrawControlMouse;
@@ -1803,7 +1834,7 @@ void SetDifficultyAndStart(CGameMenuItemChain *pItem)
     if (gDemo.at1)
         gDemo.StopPlayback();
     gStartNewGame = true;
-    gCheatMgr.sub_5BCF4();
+    gCheatMgr.ResetCheats();
     if (Bstrlen(gGameOptions.szUserMap))
     {
         levelAddUserMap(gGameOptions.szUserMap);
@@ -1932,7 +1963,7 @@ void SetupVideoModeMenu(CGameMenuItemChain *pItem)
             break;
         }
     }
-    itemOptionsDisplayModeFPSOffset.nValue = r_maxfpsoffset;
+    // itemOptionsDisplayModeFPSOffset.nValue = r_maxfpsoffset;
 #endif
 }
 
@@ -1950,17 +1981,17 @@ void UpdateVideoModeMenuFrameLimit(CGameMenuItemZCycle *pItem)
 {
 #ifdef EDUKE32
     r_maxfps = nFrameLimitValues[pItem->m_nFocus];
-    g_frameDelay = calcFrameDelay(r_maxfps + r_maxfpsoffset);
+    g_frameDelay = calcFrameDelay(r_maxfps);
 #endif
 }
 
-void UpdateVideoModeMenuFPSOffset(CGameMenuItemSlider *pItem)
-{
-#ifdef EDUKE32
-    r_maxfpsoffset = pItem->nValue;
-    g_frameDelay = calcFrameDelay(r_maxfps + r_maxfpsoffset);
-#endif
-}
+//void UpdateVideoModeMenuFPSOffset(CGameMenuItemSlider *pItem)
+//{
+//#ifdef EDUKE32
+//    r_maxfpsoffset = pItem->nValue;
+//    g_frameDelay = calcFrameDelay(r_maxfps);
+//#endif
+//}
 
 void UpdateVideoColorMenu(CGameMenuItemSliderFloat *pItem)
 {
@@ -2250,21 +2281,29 @@ void SetMouseVerticalAim(CGameMenuItemZBool *pItem)
     gMouseAim = pItem->at20;
 }
 
-void SetMouseXScale(CGameMenuItemSlider *pItem)
-{
 #ifndef EDUKE32
+void SetMouseXSensitivity(CGameMenuItemSlider *pItem)
+{
     MouseAnalogueScale[0] = pItem->nValue;
-#endif
     CONTROL_SetAnalogAxisScale(0, pItem->nValue, controldevice_mouse);
 }
 
-void SetMouseYScale(CGameMenuItemSlider *pItem)
+void SetMouseYSensitivity(CGameMenuItemSlider *pItem)
 {
-#ifndef EDUKE32
     MouseAnalogueScale[1] = pItem->nValue;
-#endif
     CONTROL_SetAnalogAxisScale(1, pItem->nValue, controldevice_mouse);
 }
+#else
+void SetMouseXSensitivity(CGameMenuItemSliderFloat *pItem)
+{
+    CONTROL_MouseAxesSensitivity[0] = pItem->fValue;
+}
+
+void SetMouseYSensitivity(CGameMenuItemSliderFloat*pItem)
+{
+    CONTROL_MouseAxesSensitivity[1] = pItem->fValue;
+}
+#endif
 
 void SetupMouseMenu(CGameMenuItemChain *pItem)
 {
@@ -2273,11 +2312,11 @@ void SetupMouseMenu(CGameMenuItemChain *pItem)
     itemOptionsControlMouseAimMode.at20 = gMouseAiming;
     itemOptionsControlMouseVerticalAim.at20 = gMouseAim;
 #ifndef EDUKE32
-    itemOptionsControlMouseXScale.nValue = MouseAnalogueScale[0];
-    itemOptionsControlMouseYScale.nValue = MouseAnalogueScale[1];
+    itemOptionsControlMouseXSensitivity.nValue = MouseAnalogueScale[0];
+    itemOptionsControlMouseYSensitivity.nValue = MouseAnalogueScale[1];
 #else
-    itemOptionsControlMouseXScale.nValue = CONTROL_MouseAxesScale[0];
-    itemOptionsControlMouseYScale.nValue = CONTROL_MouseAxesScale[1];
+    // itemOptionsControlMouseXScale.nValue = CONTROL_MouseAxesScale[0];
+    // itemOptionsControlMouseYScale.nValue = CONTROL_MouseAxesScale[1];
 #endif
 }
 
@@ -2434,7 +2473,6 @@ void ResetJoystickClassic(CGameMenuItemChain *pItem)
 
 void SetupNetworkMenu(void)
 {
-    sprintf(zNetPortBuffer, "%d", gNetPort);
     if (strlen(gNetAddress) > 0)
         strncpy(zNetAddressBuffer, gNetAddress, sizeof(zNetAddressBuffer)-1);
 
@@ -2511,6 +2549,45 @@ void TenProcess(CGameMenuItem7EA1C *pItem)
     UNREFERENCED_PARAMETER(pItem);
 }
 
+static void UpdateSaveGameItemText(int nSlot)
+{
+    switch (nSlot) // set save slot text flag
+    {
+    case 0:
+        itemSaveGame1.at37 = 0;
+        break;
+    case 1:
+        itemSaveGame2.at37 = 0;
+        break;
+    case 2:
+        itemSaveGame3.at37 = 0;
+        break;
+    case 3:
+        itemSaveGame4.at37 = 0;
+        break;
+    case 4:
+        itemSaveGame5.at37 = 0;
+        break;
+    case 5:
+        itemSaveGame6.at37 = 0;
+        break;
+    case 6:
+        itemSaveGame7.at37 = 0;
+        break;
+    case 7:
+        itemSaveGame8.at37 = 0;
+        break;
+    case 8:
+        itemSaveGame9.at37 = 0;
+        break;
+    case 9:
+        itemSaveGame10.at37 = 0;
+        break;
+    default:
+        break;
+    }
+}
+
 short gQuickLoadSlot = -1;
 short gQuickSaveSlot = -1;
 
@@ -2528,13 +2605,16 @@ void SaveGame(CGameMenuItemZEditBitmap *pItem, CGameMenuEvent *event)
     G_ModDirSnprintf(strSaveGameName, BMAX_PATH, "game00%02d.sav", nSlot);
     strcpy(gGameOptions.szUserGameName, strRestoreGameStrings[nSlot]);
     sprintf(gGameOptions.szSaveGameName, "%s", strSaveGameName);
-    restoreGameDifficulty[nSlot] = gGameOptions.nDifficulty;
     gGameOptions.nSaveGameSlot = nSlot;
-    viewLoadingScreen(2518, "Saving", "Saving Your Game", strRestoreGameStrings[nSlot]);
+    viewLoadingScreen(gMenuPicnum, "Saving", "Saving Your Game", strRestoreGameStrings[nSlot]);
     videoNextPage();
     gSaveGameNum = nSlot;
-    LoadSave::SaveGame(strSaveGameName);
     gQuickSaveSlot = nSlot;
+    LoadSave::SaveGame(strSaveGameName);
+    gGameOptions.picEntry = gSavedOffset;
+    gSaveGameOptions[nSlot] = gGameOptions;
+    UpdateSavedInfo(nSlot);
+    UpdateSaveGameItemText(nSlot);
     gGameMenuMgr.Deactivate();
     viewSetMessage("Game saved");
 }
@@ -2552,14 +2632,14 @@ void QuickSaveGame(void)
     G_ModDirSnprintf(strSaveGameName, BMAX_PATH, "game00%02d.sav", gQuickSaveSlot);
     strcpy(gGameOptions.szUserGameName, strRestoreGameStrings[gQuickSaveSlot]);
     sprintf(gGameOptions.szSaveGameName, "%s", strSaveGameName);
-    restoreGameDifficulty[gQuickSaveSlot] = gGameOptions.nDifficulty;
     gGameOptions.nSaveGameSlot = gQuickSaveSlot;
-    viewLoadingScreen(2518, "Saving", "Saving Your Game", strRestoreGameStrings[gQuickSaveSlot]);
+    viewLoadingScreen(gMenuPicnum, "Saving", "Saving Your Game", strRestoreGameStrings[gQuickSaveSlot]);
     videoNextPage();
     LoadSave::SaveGame(strSaveGameName);
     gGameOptions.picEntry = gSavedOffset;
     gSaveGameOptions[gQuickSaveSlot] = gGameOptions;
     UpdateSavedInfo(gQuickSaveSlot);
+    UpdateSaveGameItemText(gQuickSaveSlot);
     gGameMenuMgr.Deactivate();
     viewSetMessage("Game saved");
 }
@@ -2574,7 +2654,7 @@ void LoadGame(CGameMenuItemZEditBitmap *pItem, CGameMenuEvent *event)
     G_ModDirSnprintf(strLoadGameName, BMAX_PATH, "game00%02d.sav", nSlot);
     if (!testkopen(strLoadGameName, 0))
         return;
-    viewLoadingScreen(2518, "Loading", "Loading Saved Game", strRestoreGameStrings[nSlot]);
+    viewLoadingScreen(gMenuPicnum, "Loading", "Loading Saved Game", strRestoreGameStrings[nSlot]);
     videoNextPage();
     LoadSave::LoadGame(strLoadGameName);
     gGameMenuMgr.Deactivate();
@@ -2589,10 +2669,15 @@ void QuickLoadGame(void)
     G_ModDirSnprintf(strLoadGameName, BMAX_PATH, "game00%02d.sav", gQuickLoadSlot);
     if (!testkopen(strLoadGameName, 0))
         return;
-    viewLoadingScreen(2518, "Loading", "Loading Saved Game", strRestoreGameStrings[gQuickLoadSlot]);
+    viewLoadingScreen(gMenuPicnum, "Loading", "Loading Saved Game", strRestoreGameStrings[gQuickLoadSlot]);
     videoNextPage();
     LoadSave::LoadGame(strLoadGameName);
     gGameMenuMgr.Deactivate();
+}
+
+void ClearUserMapNameOnLevelChange(CGameMenuItemZCycle *pItem)
+{
+    memset(zUserMapName, 0, sizeof(zUserMapName));
 }
 
 void SetupLevelMenuItem(int nEpisode)
@@ -2603,6 +2688,7 @@ void SetupLevelMenuItem(int nEpisode)
 
 void SetupNetLevels(CGameMenuItemZCycle *pItem)
 {
+    memset(zUserMapName, 0, sizeof(zUserMapName));
     SetupLevelMenuItem(pItem->m_nFocus);
 }
 
@@ -2620,12 +2706,12 @@ void StartNetGame(CGameMenuItemChain *pItem)
     gPacketStartGame.itemSettings = itemNetStart7.m_nFocus;
     gPacketStartGame.respawnSettings = 0;
     gPacketStartGame.bFriendlyFire = itemNetStart8.at20;
-    gPacketStartGame.bKeepKeysOnRespawn = itemNetStart9.at20;
+    gPacketStartGame.bPlayerKeys = (PLAYERKEYSMODE) itemNetStart9.m_nFocus;
     ////
     gPacketStartGame.weaponsV10x = itemNetStart10.at20;
     ////
     gPacketStartGame.unk = 0;
-    Bstrncpy(gPacketStartGame.userMapName, zUserMapName, Bstrlen(zUserMapName));
+    Bstrncpy(gPacketStartGame.userMapName, zUserMapName, sizeof(gPacketStartGame.userMapName));
     gPacketStartGame.userMap = gPacketStartGame.userMapName[0] != 0;
 
     netBroadcastNewGame();

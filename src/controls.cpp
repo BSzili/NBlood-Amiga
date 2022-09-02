@@ -83,7 +83,7 @@ void ctrlInit(void)
     }
 #else
     for (int i = 0; i < joystick.numAxes; i++)
-        joySetDeadZone(i, JoystickAnalogueDead[i], JoystickAnalogueSaturate[i]);
+        JOYSTICK_SetDeadZone(i, JoystickAnalogueDead[i], JoystickAnalogueSaturate[i]);
 #endif
     CONTROL_DefineFlag(gamefunc_Move_Forward, false);
     CONTROL_DefineFlag(gamefunc_Move_Backward, false);
@@ -266,7 +266,7 @@ void ctrlGetInput(void)
         viewToggle(gViewMode);
     }
 
-    if (BUTTON(gamefunc_Map_Follow_Mode))
+    if (gViewMode == 4 && BUTTON(gamefunc_Map_Follow_Mode))
     {
         CONTROL_ClearButton(gamefunc_Map_Follow_Mode);
         gFollowMap = !gFollowMap;
@@ -420,13 +420,13 @@ void ctrlGetInput(void)
     if (BUTTON(gamefunc_ProximityBombs))
     {
         CONTROL_ClearButton(gamefunc_ProximityBombs);
-        gInput.newWeapon = 11;
+        gInput.newWeapon = kWeaponProxyTNT;
     }
 
     if (BUTTON(gamefunc_RemoteBombs))
     {
         CONTROL_ClearButton(gamefunc_RemoteBombs);
-        gInput.newWeapon = 12;
+        gInput.newWeapon = kWeaponRemoteTNT;
     }
 
     if (BUTTON(gamefunc_Holster_Weapon))
@@ -444,10 +444,10 @@ void ctrlGetInput(void)
     if (gInput.forward < keyMove && gInput.forward > -keyMove)
     {
         if (BUTTON(gamefunc_Move_Forward))
-            gInput.forward += keyMove;
+            input.forward += keyMove;
 
         if (BUTTON(gamefunc_Move_Backward))
-            gInput.forward -= keyMove;
+            input.forward -= keyMove;
     }
 
     if (gInput.strafe < keyMove && gInput.strafe > -keyMove)
@@ -558,9 +558,9 @@ void ctrlGetInput(void)
     {
         gViewMap.turn += input.q16turn<<2;
 #ifndef EDUKE32
-        gViewMap.forward += gMouseAim ? gInput.forward : clamp(gInput.forward + fix16_sadd(input.forward, -info.dpitch), -2048, 2048);
+        gViewMap.forward += gMouseAim ? input.forward : clamp(fix16_sadd(input.forward, -info.dpitch), -2048, 2048);
 #else
-        gViewMap.forward += gMouseAim ? gInput.forward : clamp(gInput.forward + fix16_sadd(input.forward, fix16_sdiv(fix16_from_int(-info.mousey), F16(8192))), -2048, 2048);
+        gViewMap.forward += gMouseAim ? input.forward : clamp(fix16_sadd(input.forward, fix16_sdiv(fix16_from_int(-info.mousey), F16(8192))), -2048, 2048);
 #endif
         gViewMap.strafe += input.strafe;
         input.q16turn = 0;

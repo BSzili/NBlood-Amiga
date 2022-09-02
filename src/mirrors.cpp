@@ -157,7 +157,7 @@ void InitMirrors(void)
             int nLink = gUpperLink[i];
             if (nLink < 0)
                 continue;
-            int nLink2 = sprite[nLink].owner /*& 0xfff*/;
+            int nLink2 = sprite[nLink].owner;
             int j = sprite[nLink2].sectnum;
             if (sector[j].ceilingpicnum != 504)
                 ThrowError("Lower link sector %d doesn't have mirror picnum\n", j);
@@ -247,8 +247,8 @@ void sub_5571C(char mode)
 void sub_557C4(int x, int y, int interpolation)
 {
     if (spritesortcnt == 0) return;
-    int nViewSprites = spritesortcnt-1;
-    for (int nTSprite = nViewSprites; nTSprite >= 0; nTSprite--)
+    int nViewSprites = spritesortcnt;
+    for (int nTSprite = nViewSprites-1; nTSprite >= 0; nTSprite--)
     {
         tspritetype *pTSprite = &tsprite[nTSprite];
         pTSprite->xrepeat = pTSprite->yrepeat = 0;

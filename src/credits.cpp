@@ -109,7 +109,8 @@ void credLogosDos(void)
         }
     }
 
-    credReset();
+    if (videoGetRenderMode() == REND_CLASSIC)
+        credReset();
 
     if (!credPlaySmk("GTI.SMK", "gti.wav", 301) && !credPlaySmk("movie/GTI.SMK", "movie/gti.wav", 301))
     {
@@ -125,7 +126,7 @@ void credLogosDos(void)
 
     credReset();
 
-    rotatesprite(160<<16, 100<<16, 65536, 0, 2518, 0, 0, 0x4a, 0, 0, xdim-1, ydim-1);
+    rotatesprite(160<<16, 100<<16, 65536, 0, gMenuPicnum, 0, 0, 0x4a, 0, 0, xdim-1, ydim-1);
     scrNextPage();
     sndStartSample("THUNDER2", 128, -1);
     sndPlaySpecialMusicOrNothing(MUS_INTRO);
@@ -207,41 +208,51 @@ char credPlaySmk(const char *_pzSMK, const char *_pzWAV, int nWav)
     int nHandleSMK = credKOpen4Load(pzSMK);
     if (nHandleSMK == -1)
     {
-        Bfree(pzSMK_);
-        Bfree(pzWAV_);
+        Xfree(pzSMK_);
+        Xfree(pzWAV_);
         return FALSE;
     }
     kclose(nHandleSMK);
     SmackerHandle hSMK = Smacker_Open(pzSMK);
     if (!hSMK.isValid)
     {
-        Bfree(pzSMK_);
-        Bfree(pzWAV_);
+        Xfree(pzSMK_);
+        Xfree(pzWAV_);
         return FALSE;
     }
     uint32_t nWidth, nHeight;
     Smacker_GetFrameSize(hSMK, nWidth, nHeight);
-    uint8_t palette[768];
+    int nFrameRate = Smacker_GetFrameRate(hSMK);
+    int nFrames = Smacker_GetNumFrames(hSMK);
+    if (!nWidth || !nHeight || !nFrames || !nFrameRate)
+    {
+        Smacker_Close(hSMK);
+        Xfree(pzSMK_);
+        Xfree(pzWAV_);
+        return FALSE;
+    }
 #ifndef EDUKE32
     allocatepermanenttile(kSMKTile, nHeight, nWidth);
     uint8_t *pFrame = (uint8_t*)waloff[kSMKTile];
 #else
-    uint8_t *pFrame = (uint8_t*)Xmalloc(nWidth*nHeight);
-    walock[kSMKTile] = CACHE1D_PERMANENT;
-    waloff[kSMKTile] = (intptr_t)pFrame;
-    tileSetSize(kSMKTile, nHeight, nWidth);
+    uint8_t *pFrame = (uint8_t*)Xcalloc(1,nWidth*nHeight);
 #endif
 
     if (!pFrame)
     {
         Smacker_Close(hSMK);
-        Bfree(pzSMK_);
-        Bfree(pzWAV_);
+        Xfree(pzSMK_);
+        Xfree(pzWAV_);
         return FALSE;
     }
-    int nFrameRate = Smacker_GetFrameRate(hSMK);
-    int nFrames = Smacker_GetNumFrames(hSMK);
 
+#ifdef EDUKE32
+    walock[kSMKTile] = CACHE1D_PERMANENT;
+    waloff[kSMKTile] = (intptr_t)pFrame;
+    tileSetSize(kSMKTile, nHeight, nWidth);
+#endif
+
+    uint8_t palette[768];
     Smacker_GetPalette(hSMK, palette);
     paletteSetColorTable(kSMKPal, palette);
     videoSetPalette(gBrightness>>2, kSMKPal, 8+2);
@@ -344,15 +355,15 @@ char credPlaySmk(const char *_pzSMK, const char *_pzWAV, int nWav)
     renderSetAspect(viewingrange, oyxaspect);
     videoSetPalette(gBrightness >> 2, 0, 8+2);
 #ifndef EDUKE32
-    suckcache((void *)waloff[kSMKTile]);
+    walock[kSMKTile] = 1;
 #else
     walock[kSMKTile] = 0;
     waloff[kSMKTile] = 0;
     tileSetSize(kSMKTile, 0, 0);
-    Bfree(pFrame);
+    Xfree(pFrame);
 #endif
-    Bfree(pzSMK_);
-    Bfree(pzWAV_);
+    Xfree(pzSMK_);
+    Xfree(pzWAV_);
 
     return TRUE;
 #endif

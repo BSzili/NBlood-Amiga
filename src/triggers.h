@@ -42,7 +42,13 @@ enum BUSYID {
     BUSYID_7,
 };
 
-#define kMaxBusyCount 128
+#define kMaxBusyCountVanilla 128
+#ifdef __AMIGA__
+#define kMaxBusyCount kMaxBusyCountVanilla
+#else
+#define kMaxBusyCount kMaxXSectors >> 2
+#endif
+
 struct BUSY {
     int at0;
     int at4;
@@ -53,18 +59,18 @@ struct BUSY {
 extern BUSY gBusy[kMaxBusyCount];
 extern int gBusyCount;
 
-void trTriggerSector(unsigned int nSector, XSECTOR *pXSector, int command);
+void trTriggerSector(unsigned int nSector, XSECTOR *pXSector, int command, int causerID);
 void trMessageSector(unsigned int nSector, EVENT event);
-void trTriggerWall(unsigned int nWall, XWALL *pXWall, int command);
+void trTriggerWall(unsigned int nWall, XWALL *pXWall, int command, int causerID);
 void trMessageWall(unsigned int nWall, EVENT event);
-void trTriggerSprite(unsigned int nSprite, XSPRITE *pXSprite, int command);
+void trTriggerSprite(unsigned int nSprite, XSPRITE *pXSprite, int command, int causerID);
 void trMessageSprite(unsigned int nSprite, EVENT event);
 void trProcessBusy(void);
 void trInit(void);
 void trTextOver(int nId);
-char SetSpriteState(int nSprite, XSPRITE* pXSprite, int nState);
-char SetWallState(int nWall, XWALL* pXWall, int nState);
-char SetSectorState(int nSector, XSECTOR* pXSector, int nState);
+char SetSpriteState(int nSprite, XSPRITE* pXSprite, int nState, int causerID);
+char SetWallState(int nWall, XWALL* pXWall, int nState, int causerID);
+char SetSectorState(int nSector, XSECTOR* pXSector, int nState, int causerID);
 void TeleFrag(int nKiller, int nSector);
 void SectorStartSound(int nSector, int nState);
 void SectorEndSound(int nSector, int nState);

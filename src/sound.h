@@ -73,6 +73,7 @@ void sndKillAllSounds(void);
 void sndProcess(void);
 void sndTerm(void);
 void sndInit(void);
+void sndLoadGMTimbre(void);
 #ifdef __AMIGA__
 DICTNODE *sndLookupSfxCached(int soundId);
 DICTNODE *sndLookupRawCached(int soundId, const char *rawName);

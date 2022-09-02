@@ -40,8 +40,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 extern int32_t MouseDeadZone, MouseBias;
 extern int32_t SmoothInput;
 extern int32_t MouseFunctions[MAXMOUSEBUTTONS][2];
-extern int32_t MouseAnalogueAxes[MAXMOUSEAXES];
+// extern int32_t MouseAnalogueAxes[MAXMOUSEAXES];
 #ifndef EDUKE32
+extern int32_t MouseAnalogueAxes[MAXMOUSEAXES];
 extern int32_t MouseAnalogueScale[MAXMOUSEAXES];
 #endif
 extern int32_t JoystickFunctions[MAXJOYBUTTONSANDHATS][2];
@@ -99,6 +100,7 @@ extern int32_t gShowMapTitle;
 extern int32_t gFov;
 extern int32_t gCenterHoriz;
 extern int32_t gDeliriumBlur;
+extern int32_t gFMPianoFix;
 
 ///////
 extern int gWeaponsV10x;

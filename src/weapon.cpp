@@ -132,7 +132,7 @@ void QAV::PlaySound3D(spritetype *pSprite, int nSound, int a3, int a4)
     sfxPlay3DSound(pSprite, nSound, a3, a4);
 }
 
-char checkFired6or7(PLAYER *pPlayer)
+char checkLitSprayOrTNT(PLAYER *pPlayer)
 {
     switch (pPlayer->curWeapon)
     {
@@ -625,7 +625,7 @@ void WeaponRaise(PLAYER *pPlayer)
 void WeaponLower(PLAYER *pPlayer)
 {
     dassert(pPlayer != NULL);
-    if (checkFired6or7(pPlayer))
+    if (checkLitSprayOrTNT(pPlayer))
         return;
     pPlayer->throwPower = 0;
     int prevState = pPlayer->weaponState;
@@ -1049,7 +1049,8 @@ void ThrowCan(int, PLAYER *pPlayer)
     if (pSprite)
     {
         sfxPlay3DSound(pSprite, 441, 0, 0);
-        evPost(pSprite->index, 3, pPlayer->fuseTime, kCmdOn);
+        pSprite->shade = -128;
+        evPost(pSprite->index, 3, pPlayer->fuseTime, kCmdOn, pPlayer->nSprite);
         int nXSprite = pSprite->extra;
         XSPRITE *pXSprite = &xsprite[nXSprite];
         pXSprite->Impact = 1;
@@ -1064,7 +1065,7 @@ void DropCan(int, PLAYER *pPlayer)
     spritetype *pSprite = playerFireThing(pPlayer, 0, 0, kThingArmedSpray, 0);
     if (pSprite)
     {
-        evPost(pSprite->index, 3, pPlayer->fuseTime, kCmdOn);
+        evPost(pSprite->index, 3, pPlayer->fuseTime, kCmdOn, pPlayer->nSprite);
         UseAmmo(pPlayer, 6, gAmmoItemData[0].count);
     }
 }
@@ -1073,10 +1074,10 @@ void ExplodeCan(int, PLAYER *pPlayer)
 {
     sfxKill3DSound(pPlayer->pSprite, -1, 441);
     spritetype *pSprite = playerFireThing(pPlayer, 0, 0, kThingArmedSpray, 0);
-    evPost(pSprite->index, 3, 0, kCmdOn);
+    evPost(pSprite->index, 3, 0, kCmdOn, pPlayer->nSprite);
     UseAmmo(pPlayer, 6, gAmmoItemData[0].count);
     StartQAV(pPlayer, 15, -1);
-    pPlayer->curWeapon = 0;
+    pPlayer->curWeapon = kWeaponNone;
     pPlayer->throwPower = 0;
 }
 
@@ -1091,7 +1092,7 @@ void ThrowBundle(int, PLAYER *pPlayer)
     if (pPlayer->fuseTime < 0)
         pXSprite->Impact = 1;
     else
-        evPost(pSprite->index, 3, pPlayer->fuseTime, kCmdOn);
+        evPost(pSprite->index, 3, pPlayer->fuseTime, kCmdOn, pPlayer->nSprite);
     UseAmmo(pPlayer, 5, 1);
     pPlayer->throwPower = 0;
 }
@@ -1100,7 +1101,7 @@ void DropBundle(int, PLAYER *pPlayer)
 {
     sfxKill3DSound(pPlayer->pSprite, 16, -1);
     spritetype *pSprite = playerFireThing(pPlayer, 0, 0, kThingArmedTNTBundle, 0);
-    evPost(pSprite->index, 3, pPlayer->fuseTime, kCmdOn);
+    evPost(pSprite->index, 3, pPlayer->fuseTime, kCmdOn, pPlayer->nSprite);
     UseAmmo(pPlayer, 5, 1);
 }
 
@@ -1108,10 +1109,10 @@ void ExplodeBundle(int, PLAYER *pPlayer)
 {
     sfxKill3DSound(pPlayer->pSprite, 16, -1);
     spritetype *pSprite = playerFireThing(pPlayer, 0, 0, kThingArmedTNTBundle, 0);
-    evPost(pSprite->index, 3, 0, kCmdOn);
+    evPost(pSprite->index, 3, 0, kCmdOn, pPlayer->nSprite);
     UseAmmo(pPlayer, 5, 1);
     StartQAV(pPlayer, 24, -1, 0);
-    pPlayer->curWeapon = 0;
+    pPlayer->curWeapon = kWeaponNone;
     pPlayer->throwPower = 0;
 }
 
@@ -1120,7 +1121,7 @@ void ThrowProx(int, PLAYER *pPlayer)
     int nSpeed = mulscale16(pPlayer->throwPower, 0x177777)+0x66666;
     sfxPlay3DSound(pPlayer->pSprite, 455, 1, 0);
     spritetype *pSprite = playerFireThing(pPlayer, 0, -9460, kThingArmedProxBomb, nSpeed);
-    evPost(pSprite->index, 3, 240, kCmdOn);
+    evPost(pSprite->index, 3, 240, kCmdOn, pPlayer->nSprite);
     UseAmmo(pPlayer, 10, 1);
     pPlayer->throwPower = 0;
 }
@@ -1128,7 +1129,7 @@ void ThrowProx(int, PLAYER *pPlayer)
 void DropProx(int, PLAYER *pPlayer)
 {
     spritetype *pSprite = playerFireThing(pPlayer, 0, 0, kThingArmedProxBomb, 0);
-    evPost(pSprite->index, 3, 240, kCmdOn);
+    evPost(pSprite->index, 3, 240, kCmdOn, pPlayer->nSprite);
     UseAmmo(pPlayer, 10, 1);
 }
 
@@ -1155,7 +1156,7 @@ void DropRemote(int, PLAYER *pPlayer)
 
 void FireRemote(int, PLAYER *pPlayer)
 {
-    evSend(0, 0, 90+(pPlayer->pSprite->type-kDudePlayer1), kCmdOn);
+    evSend(0, 0, 90+(pPlayer->pSprite->type-kDudePlayer1), kCmdOn, pPlayer->nSprite);
 }
 
 #define kMaxShotgunBarrels 4
@@ -1517,7 +1518,7 @@ void AltFireVoodoo(int nTrigger, PLAYER *pPlayer)
             }
         }
         UseAmmo(pPlayer, 9, pPlayer->ammoCount[9]);
-        pPlayer->hasWeapon[10] = 0;
+        pPlayer->hasWeapon[kWeaponVoodoo] = 0;
         pPlayer->weaponState = -1;
     }
 }
@@ -1535,7 +1536,7 @@ void DropVoodoo(int nTrigger, PLAYER *pPlayer)
         evPost(pSprite->index, 3, 90, kCallbackDropVoodoo);
         UseAmmo(pPlayer, 6, gAmmoItemData[0].count);
         UseAmmo(pPlayer, 9, pPlayer->ammoCount[9]);
-        pPlayer->hasWeapon[10] = 0;
+        pPlayer->hasWeapon[kWeaponVoodoo] = 0;
     }
 }
 
@@ -1577,7 +1578,7 @@ void FireTesla(int nTrigger, PLAYER *pPlayer)
             }
         }
         playerFireMissile(pPlayer, pMissile->at0, pPlayer->aim.dx, pPlayer->aim.dy, pPlayer->aim.dz, pMissile->at4);
-        UseAmmo(pPlayer, 7, pMissile->at8);
+        UseAmmo(pPlayer, pPlayer->weaponAmmo, pMissile->at8);
         sfxPlay3DSound(pSprite, pMissile->atc, 1, 0);
         pPlayer->visibility = pMissile->at10;
         pPlayer->flashEffect = pMissile->at14;
@@ -1678,7 +1679,6 @@ void AltFireLifeLeech(int nTrigger, PLAYER *pPlayer)
         pXSprite->Push = 1;
         pXSprite->Proximity = 1;
         pXSprite->DudeLockout = 1;
-        pXSprite->data4 = ClipHigh(pPlayer->ammoCount[4], 12);
         pXSprite->stateTimer = 1;
         evPost(pMissile->index, 3, 120, kCallbackLeechStateTimer);
         if (gGameOptions.nGameType <= 1)
@@ -1697,7 +1697,7 @@ void AltFireLifeLeech(int nTrigger, PLAYER *pPlayer)
             pXSprite->data3 = pPlayer->ammoCount[8];
             pPlayer->ammoCount[8] = 0;
         }
-        pPlayer->hasWeapon[9] = 0;
+        pPlayer->hasWeapon[kWeaponLifeLeech] = 0;
     }
 }
 
@@ -1729,7 +1729,7 @@ char gWeaponUpgrade[][13] = {
 char WeaponUpgrade(PLAYER *pPlayer, char newWeapon)
 {
     char weapon = pPlayer->curWeapon;
-    if (!checkFired6or7(pPlayer) && (gProfile[pPlayer->nPlayer].nWeaponSwitch&1) && (gWeaponUpgrade[pPlayer->curWeapon][newWeapon] || (gProfile[pPlayer->nPlayer].nWeaponSwitch&2)))
+    if (!checkLitSprayOrTNT(pPlayer) && (gProfile[pPlayer->nPlayer].nWeaponSwitch&1) && (gWeaponUpgrade[pPlayer->curWeapon][newWeapon] || (gProfile[pPlayer->nPlayer].nWeaponSwitch&2)))
         weapon = newWeapon;
     return weapon;
 }
@@ -1806,7 +1806,7 @@ char WeaponFindLoaded(PLAYER *pPlayer, int *a2)
             }
         }
     }
-    else if (a2)
+    if (a2)
         *a2 = v14;
     return weapon;
 }
@@ -1899,7 +1899,7 @@ char processProxy(PLAYER *pPlayer)
             pPlayer->weaponState = 8;
             StartQAV(pPlayer, 29, nClientThrowProx, 0);
         }
-        break;
+        return 1;
     }
     return 0;
 }
@@ -1915,7 +1915,7 @@ char processRemote(PLAYER *pPlayer)
             pPlayer->weaponState = 11;
             StartQAV(pPlayer, 39, nClientThrowRemote, 0);
         }
-        break;
+        return 1;
     }
     return 0;
 }
@@ -1996,7 +1996,7 @@ void WeaponProcess(PLAYER *pPlayer) {
     }
     if (pPlayer->isUnderwater && BannedUnderwater(pPlayer->curWeapon))
     {
-        if (checkFired6or7(pPlayer))
+        if (checkLitSprayOrTNT(pPlayer))
         {
             if (pPlayer->curWeapon == kWeaponSprayCan)
             {
@@ -2153,7 +2153,7 @@ void WeaponProcess(PLAYER *pPlayer) {
     }
     if (pPlayer->input.newWeapon)
     {
-        if (pPlayer->isUnderwater && BannedUnderwater(pPlayer->input.newWeapon) && !checkFired6or7(pPlayer) && !VanillaMode()) // skip banned weapons when underwater and using next/prev weapon key inputs
+        if (pPlayer->isUnderwater && BannedUnderwater(pPlayer->input.newWeapon) && !checkLitSprayOrTNT(pPlayer) && !VanillaMode()) // skip banned weapons when underwater and using next/prev weapon key inputs
         {
             if (oldKeyFlags.nextWeapon || oldKeyFlags.prevWeapon) // if player switched weapons
             {
@@ -2219,7 +2219,7 @@ void WeaponProcess(PLAYER *pPlayer) {
             pPlayer->input.newWeapon = kWeaponNone;
             return;
         }
-        if (pPlayer->isUnderwater && BannedUnderwater(pPlayer->input.newWeapon) && !checkFired6or7(pPlayer))
+        if (pPlayer->isUnderwater && BannedUnderwater(pPlayer->input.newWeapon) && !checkLitSprayOrTNT(pPlayer))
         {
             pPlayer->input.newWeapon = kWeaponNone;
             return;

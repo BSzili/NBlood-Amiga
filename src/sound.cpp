@@ -57,6 +57,8 @@ int32_t FXDevice;
 
 Resource gSoundRes;
 
+bool sndActive = false;
+
 int soundRates[13] = {
     11025,
     11025,
@@ -490,6 +492,8 @@ void sndKillSound(SAMPLE2D *pChannel)
 
 void sndStartWavDisk(const char *pzFile, int nVolume, int nChannel)
 {
+    if (!SoundToggle)
+        return;
     dassert(nChannel >= -1 && nChannel < kChannelMax);
     SAMPLE2D *pChannel;
     if (nChannel == -1)
@@ -607,6 +611,35 @@ void DeinitSoundDevice(void)
         ThrowError(FX_ErrorString(nStatus));
 }
 
+void sndLoadGMTimbre(void)
+{
+#ifdef EDUKE32
+    if (!sndActive)
+        return;
+    DICTNODE *hTmb = gSoundRes.Lookup("GMTIMBRE", "TMB");
+    if (hTmb)
+    {
+        unsigned char *timbre = (unsigned char*)Xmalloc(hTmb->size);
+        gSoundRes.Load(hTmb, timbre);
+        if (gFMPianoFix)
+        {
+            static uint8_t pianobroken[13] = {
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+            };
+            static uint8_t pianofixed[13] = {
+                0x33, 0x31, 0x5a, 0x00, 0xb2, 0xb1, 0x50, 0xf5, 0x00, 0x01, 0x00, 0x00, 0x00
+            };
+            if (!memcmp(&timbre[0], pianobroken, 13))
+            {
+                memcpy(&timbre[0], pianofixed, 13);
+            }
+        }
+        AL_RegisterTimbreBank(timbre);
+        Xfree(timbre);
+    }
+#endif
+}
+
 void InitMusicDevice(void)
 {
     int nStatus;
@@ -642,10 +675,6 @@ void InitMusicDevice(void)
     }
 #ifndef EDUKE32
     buildprintf("Music driver is %s\n", MUSIC_GetCurrentDriverName());
-#else
-    DICTNODE *hTmb = gSoundRes.Lookup("GMTIMBRE", "TMB");
-    if (hTmb)
-        AL_RegisterTimbreBank((unsigned char*)gSoundRes.Load(hTmb));
 #endif
     MUSIC_SetVolume(MusicVolume);
 
@@ -661,8 +690,6 @@ void DeinitMusicDevice(void)
     if (nStatus != 0)
         ThrowError(MUSIC_ErrorString(nStatus));
 }
-
-bool sndActive = false;
 
 void sndTerm(void)
 {
@@ -684,4 +711,5 @@ void sndInit(void)
     InitSoundDevice();
     InitMusicDevice();
     sndActive = true;
+    sndLoadGMTimbre();
 }

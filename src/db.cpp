@@ -760,9 +760,20 @@ const int nXWallSize = 24;
 
 int dbLoadMap(const char *pPath, int *pX, int *pY, int *pZ, short *pAngle, short *pSector, unsigned int *pCRC) {
     char name2[BMAX_PATH]; int16_t tpskyoff[256];
-    memset(show2dsector, 0, sizeof(show2dsector));
-    memset(show2dwall, 0, sizeof(show2dwall));
-    memset(show2dsprite, 0, sizeof(show2dsprite));
+
+    memset(show2dsector,0,sizeof(show2dsector));
+    memset(show2dwall,0,sizeof(show2dwall));
+    memset(show2dsprite,0,sizeof(show2dsprite));
+#ifndef __AMIGA__
+    memset(spriteext,0,kMaxSprites*sizeof(spriteext_t));
+#endif
+
+    memset(xvel,0,sizeof(xvel));
+    memset(yvel,0,sizeof(yvel));
+    memset(zvel,0,sizeof(zvel));
+    memset(xsprite,0,sizeof(xsprite));
+    memset(sprite,0,kMaxSprites*sizeof(spritetype));
+
     #ifdef NOONE_EXTENSIONS
     gModernMap = false;
     #endif
@@ -1368,6 +1379,7 @@ int dbLoadMap(const char *pPath, int *pX, int *pY, int *pZ, short *pAngle, short
 #endif
 
 #ifdef EDUKE32
+    calc_sector_reachability();
     g_loadedMapVersion = 7;
 #endif
 
@@ -1718,18 +1730,18 @@ int dbSaveMap(const char *pPath, int nX, int nY, int nZ, short nAngle, short nSe
     if (nHandle == -1)
     {
         initprintf("Couldn't open \"%s\" for writing: %s\n", sMapExt, strerror(errno));
-        Bfree(pData);
+        Xfree(pData);
         return -1;
     }
     if (Bwrite(nHandle, pData, nSize) != nSize)
     {
         initprintf("Couldn't write to \"%s\": %s\n", sMapExt, strerror(errno));
         Bclose(nHandle);
-        Bfree(pData);
+        Xfree(pData);
         return -1;
     }
     Bclose(nHandle);
-    Bfree(pData);
+    Xfree(pData);
 #endif
     return 0;
 #if 0

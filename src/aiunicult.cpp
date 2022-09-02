@@ -262,7 +262,7 @@ static void genDudeAttack1(int, int nXIndex) {
                         aiActivateDude(pSpawned, &xsprite[pSpawned->extra]);
                 }
 
-                gKillMgr.AddCount(1);
+                gKillMgr.AddCount(pSpawned);
                 pExtra->slave[pExtra->slaveCount++] = pSpawned->index;
                 if (!playGenDudeSound(pSprite, kGenDudeSndAttackNormal))
                     sfxPlay3DSoundCP(pSprite, 379, 1, 0, 0x10000 - Random3(0x3000));
@@ -385,7 +385,7 @@ static void ThrowThing(int nXIndex, bool impact) {
     if (impact == true && dist <= 7680) xsprite[pThing->extra].Impact = true;
     else {
         xsprite[pThing->extra].Impact = false;
-        evPost(pThing->index, 3, 120 * Random(2) + 120, kCmdOn);
+        evPost(pThing->index, 3, 120 * Random(2) + 120, kCmdOn, pSprite->index);
     }
 }
 
@@ -720,7 +720,7 @@ static void thinkChase( spritetype* pSprite, XSPRITE* pXSprite ) {
                                 break;
                             if (IsDudeSprite(pHSprite) && (weaponType != kGenDudeWeaponHitscan || hscn)) {
                                 // dodge a bit in sides
-                                if (pXHSprite->target != pSprite->index) {
+                                if (pXHSprite->health > 0 && pXHSprite->target != pSprite->index) {
                                     if (pExtra->baseDispersion < 1024 && weaponType != kGenDudeWeaponMissile) {
                                         if (spriteIsUnderwater(pSprite)) aiGenDudeNewState(pSprite, &genDudeDodgeShorterW);
                                         else if (inDuck(pXSprite->aiState)) aiGenDudeNewState(pSprite, &genDudeDodgeShorterD);
@@ -921,9 +921,9 @@ static void thinkChase( spritetype* pSprite, XSPRITE* pXSprite ) {
 
 int checkAttackState(spritetype* pSprite, XSPRITE* pXSprite) {
     UNREFERENCED_PARAMETER(pXSprite);
-    if (sub_5BDA8(pSprite, 14) || spriteIsUnderwater(pSprite,false))
+    if (dudeIsPlayingSeq(pSprite, 14) || spriteIsUnderwater(pSprite,false))
     {
-        if ( !sub_5BDA8(pSprite, 14) || spriteIsUnderwater(pSprite,false))
+        if ( !dudeIsPlayingSeq(pSprite, 14) || spriteIsUnderwater(pSprite,false))
         {
             if (spriteIsUnderwater(pSprite,false))
             {
@@ -1070,6 +1070,9 @@ void aiGenDudeNewState(spritetype* pSprite, AISTATE* pAIState) {
     }
 
     XSPRITE* pXSprite = &xsprite[pSprite->extra];
+    if (pXSprite->health <= 0 || pXSprite->sysData1 == kGenDudeTransformStatus)
+        return;
+
 
     // redirect dudes which cannot walk to non-walk states
     if (!gGenDudeExtra[pSprite->index].canWalk) {
@@ -1699,7 +1702,7 @@ spritetype* genDudeSpawn(XSPRITE* pXSource, spritetype* pSprite, int nDist) {
         pDude->yrepeat = pSource->yrepeat;
     }
 
-    gKillMgr.AddCount(1);
+    gKillMgr.AddCount(pDude);
     aiInitSprite(pDude);
     return pDude;
 }
@@ -1715,7 +1718,7 @@ void genDudeTransform(spritetype* pSprite) {
     XSPRITE* pXIncarnation = getNextIncarnation(pXSprite);
     if (pXIncarnation == NULL) {
         if (pXSprite->sysData1 == kGenDudeTransformStatus) pXSprite->sysData1 = 0;
-        trTriggerSprite(pSprite->index, pXSprite, kCmdOff);
+        trTriggerSprite(pSprite->index, pXSprite, kCmdOff, pSprite->index);
         return;
     }
     
@@ -1731,7 +1734,7 @@ void genDudeTransform(spritetype* pSprite) {
     pXIncarnation->triggerOff = false;
 
     // trigger dude death before transform
-    trTriggerSprite(pSprite->index, pXSprite, kCmdOff);
+    trTriggerSprite(pSprite->index, pXSprite, kCmdOff, pSprite->index);
 
     pSprite->type = pSprite->inittype = pIncarnation->type;
     pSprite->flags = pIncarnation->flags;
@@ -2200,7 +2203,7 @@ void aiGenDudeInitSprite(spritetype* pSprite, XSPRITE* pXSprite) {
     switch (pSprite->type) {
         case kDudeModernCustom: {
             DUDEEXTRA_STATS* pDudeExtraE = &gDudeExtra[pSprite->extra].stats;
-            pDudeExtraE->active = 0;
+            pDudeExtraE->active = pDudeExtraE->thinkTime = 0;
             aiGenDudeNewState(pSprite, &genDudeIdleL);
             break;
         }

@@ -22,23 +22,26 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 //-------------------------------------------------------------------------
 #pragma once
 #include "callback.h"
-
 enum {
 kChannelZero                        = 0,
-kChannelSetTotalSecrets,
-kChannelSecretFound,
-kChannelTextOver,
-kChannelLevelExitNormal,
-kChannelLevelExitSecret,
-kChannelModernEndLevelCustom, // custom level end
-kChannelLevelStart,
-kChannelLevelStartMatch, // DM and TEAMS
-kChannelLevelStartCoop,
-kChannelLevelStartTeamsOnly,
+kChannelSetTotalSecrets             = 1,
+kChannelSecretFound                 = 2,
+kChannelTextOver                    = 3,
+kChannelLevelExitNormal             = 4,
+kChannelLevelExitSecret             = 5,
+kChannelModernEndLevelCustom        = 6, // custom level number end (gModernMap)
+kChannelLevelStart                  = 7,
+kChannelLevelStartMatch             = 8, // DM and TEAMS
+kChannelLevelStartCoop              = 9,
+kChannelLevelStartTeamsOnly         = 10,
 kChannelPlayerDeathTeamA            = 15,
-kChannelPlayerDeathTeamB,
+kChannelPlayerDeathTeamB            = 16,
 /////////////////////////////
+// level start channels for specific ports
+kChannelLevelStartNBLOOD            = 17, // *NBlood only* must trigger it at level start (gModernMap)
+kChannelLevelStartRAZE              = 18, // *Raze only* must trigger it at level start (gModernMap)
 // channels of players to send commands on
+kChannelAllPlayers                  = 29,
 kChannelPlayer0                     = 30,
 kChannelPlayer1,
 kChannelPlayer2,
@@ -47,7 +50,6 @@ kChannelPlayer4,
 kChannelPlayer5,
 kChannelPlayer6,
 kChannelPlayer7,
-kChannelAllPlayers                  = kChannelPlayer0 + kMaxPlayers,
 // channel of event causer
 kChannelEventCauser                 = 50,
 // map requires modern features to work properly
@@ -114,12 +116,12 @@ kCmdWallTouch               = 52,
 kCmdSectorMotionPause       = 13,   // stops motion of the sector
 kCmdSectorMotionContinue    = 14,   // continues motion of the sector
 kCmdDudeFlagsSet            = 15,   // copy dudeFlags from sprite to dude
+kCmdEventKillFull           = 16,   // immediately kill the pending object events
 kCmdModernUse               = 53,   // used by most of modern types
 #endif
 
 kCmdNumberic                = 64, // 64: 0, 65: 1 and so on up to 255
 kCmdModernFeaturesEnable    = 100, // must be in object with kChannelMapModernize RX / TX
-kCmdModernFeaturesDisable   = 200, // must be in object with kChannelMapModernize RX / TX
 kCmdNumbericMax             = 255,
 };
 
@@ -136,13 +138,15 @@ struct EVENT {
     unsigned int type:      3; // type
     unsigned int cmd:       8; // cmd
     unsigned int funcID:    8; // callback
+    unsigned int causer:    14; // spritenum of object which initiated this event (kCauserGame == initiated by the game)
 };
 
 void evInit(void);
 char evGetSourceState(int nType, int nIndex);
-void evSend(int nIndex, int nType, int rxId, COMMAND_ID command);
-void evPost(int nIndex, int nType, unsigned int nDelta, COMMAND_ID command);
+void evSend(int nIndex, int nType, int rxId, COMMAND_ID command, int causerID);
+void evPost(int nIndex, int nType, unsigned int nDelta, COMMAND_ID command, int causerID);
 void evPost(int nIndex, int nType, unsigned int nDelta, CALLBACK_ID callback);
 void evProcess(unsigned int nTime);
 void evKill(int a1, int a2);
+void evKill(int idx, int type, int causer);
 void evKill(int a1, int a2, CALLBACK_ID a3);

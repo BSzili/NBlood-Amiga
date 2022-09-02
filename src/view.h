@@ -75,6 +75,27 @@ enum INTERPOLATE_TYPE {
 #define kLoadScreenWideRight 9218
 #define kLoadScreenWideMiddle 9219
 
+#ifndef EDUKE32
+
+#define kSBarNumberHealth 2190
+#define kSBarNumberAmmo 2240
+#define kSBarNumberInv 4208 // yellow
+#define kSBarNumberArmor1 4208 // blue
+#define kSBarNumberArmor2 4208 // red
+#define kSBarNumberArmor3 4208 // green
+
+#else
+
+#define kSBarNumberHealth 9220
+#define kSBarNumberAmmo 9230
+#define kSBarNumberInv 9240
+#define kSBarNumberArmor1 9250
+#define kSBarNumberArmor2 9260
+#define kSBarNumberArmor3 9270
+#define kSBarNegative 9280
+
+#endif
+
 #define kFontNum 5
 
 struct FONT {

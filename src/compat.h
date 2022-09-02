@@ -237,6 +237,7 @@ typedef spritetype *tspriteptr_t;
 //   bit 15: 1 = Invisible sprite, 0 = not invisible
 */
 #define CSTAT_SPRITE_BLOCK (1)
+#define CSTAT_SPRITE_TRANSLUCENT (2)
 #define CSTAT_SPRITE_YFLIP (8)
 #define CSTAT_SPRITE_BLOCK_HITSCAN (0x100)
 #define CSTAT_SPRITE_INVISIBLE (0x8000)
@@ -244,6 +245,7 @@ typedef spritetype *tspriteptr_t;
 // wall 16
 #define CSTAT_SPRITE_ALIGNMENT_FLOOR (32)
 #define CSTAT_SPRITE_ONE_SIDED (64)
+
 
 /*
 //   bit 0: 1 = Blocking wall (use with clipmove, getzrange)         "B"
@@ -465,6 +467,7 @@ enum {
 };
 */
 #define RS_LERP 0
+#define RS_AUTO 2
 
 extern char const g_keyAsciiTable[128];
 extern char const g_keyAsciiTableShift[128];

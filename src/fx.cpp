@@ -41,19 +41,19 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 CFX gFX;
 
 struct FXDATA {
-    CALLBACK_ID funcID; // callback
-    char at1; // detail
-    short at2; // seq
-    short at4; // flags
-    int at6; // gravity
-    int ata; // air drag
-    int ate;
-    short at12; // picnum
-    unsigned char at14; // xrepeat
-    unsigned char at15; // yrepeat
-    short at16; // cstat
-    signed char at18; // shade
-    char at19; // pal
+    CALLBACK_ID funcID;
+    char detail;
+    short seq;
+    short flags;
+    int gravity;
+    int airdrag;
+    int duration;
+    short picnum;
+    unsigned char xrepeat;
+    unsigned char yrepeat;
+    short cstat;
+    signed char shade;
+    char pal;
 };
 
 FXDATA gFXData[] = {
@@ -137,7 +137,7 @@ void CFX::fxFree(int nSprite)
         actPostSprite(nSprite, kStatFree);
 }
 
-spritetype * CFX::fxSpawn(FX_ID nFx, int nSector, int x, int y, int z, unsigned int a6)
+spritetype * CFX::fxSpawn(FX_ID nFx, int nSector, int x, int y, int z, unsigned int duration)
 {
     if (nSector < 0 || nSector >= numsectors)
         return NULL;
@@ -202,32 +202,32 @@ spritetype * CFX::fxSpawn(FX_ID nFx, int nSector, int x, int y, int z, unsigned 
 #endif
     spritetype *pSprite = actSpawnSprite(nSector, x, y, z, 1, 0);
     pSprite->type = nFx;
-    pSprite->picnum = pFX->at12;
-    pSprite->cstat |= pFX->at16;
-    pSprite->shade = pFX->at18;
-    pSprite->pal = pFX->at19;
+    pSprite->picnum = pFX->picnum;
+    pSprite->cstat |= pFX->cstat;
+    pSprite->shade = pFX->shade;
+    pSprite->pal = pFX->pal;
 #ifndef EDUKE32
-    pSprite->filler = pFX->at1;
+    pSprite->filler = pFX->detail;
 #else
-    qsprite_filler[pSprite->index] = pFX->at1;
+    qsprite_filler[pSprite->index] = pFX->detail;
 #endif
-    if (pFX->at14 > 0)
-        pSprite->xrepeat = pFX->at14;
-    if (pFX->at15 > 0)
-        pSprite->yrepeat = pFX->at15;
-    if ((pFX->at4 & 1) && Chance(0x8000))
+    if (pFX->xrepeat > 0)
+        pSprite->xrepeat = pFX->xrepeat;
+    if (pFX->yrepeat > 0)
+        pSprite->yrepeat = pFX->yrepeat;
+    if ((pFX->flags & 1) && Chance(0x8000))
         pSprite->cstat |= 4;
-    if ((pFX->at4 & 2) && Chance(0x8000))
+    if ((pFX->flags & 2) && Chance(0x8000))
         pSprite->cstat |= 8;
-    if (pFX->at2)
+    if (pFX->seq)
     {
         int nXSprite = dbInsertXSprite(pSprite->index);
-        seqSpawn(pFX->at2, 3, nXSprite, -1);
+        seqSpawn(pFX->seq, 3, nXSprite, -1);
     }
-    if (a6 == 0)
-        a6 = pFX->ate;
-    if (a6)
-        evPost((int)pSprite->index, 3, a6+Random2(a6>>1), kCallbackRemove);
+    if (duration == 0) // no override duration set, load from global fx data struct
+        duration = pFX->duration;
+    if (duration)
+        evPost((int)pSprite->index, 3, duration+Random2(duration>>1), kCallbackRemove);
     return pSprite;
 }
 
@@ -236,6 +236,8 @@ void CFX::fxProcess(void)
     for (int nSprite = headspritestat[kStatFX]; nSprite >= 0; nSprite = nextspritestat[nSprite])
     {
         spritetype *pSprite = &sprite[nSprite];
+        if (pSprite->statnum == kStatFree) // skip free'd fx sprite
+            continue;
         viewBackupSpriteLoc(nSprite, pSprite);
         short nSector = pSprite->sectnum;
         dassert(nSector >= 0 && nSector < kMaxSectors);
@@ -243,10 +245,10 @@ void CFX::fxProcess(void)
         FXDATA *pFXData = &gFXData[pSprite->type];
 #ifdef __AMIGA__
         // no gravity or velocity
-        if (!pFXData->at6 && !xvel[pSprite->index] && !yvel[pSprite->index] && !(zvel[pSprite->index]>>8)) continue;
-        //printf("nSprite %4d type %d pic %d vel (%d,%d,%d) at6 %d pos (%d,%d,%d) floorz %d ceilingz %d\n", nSprite, pSprite->type, pSprite->picnum, xvel[nSprite], yvel[nSprite], zvel[nSprite], pFXData->at6, pSprite->x, pSprite->y, pSprite->z, sector[pSprite->sectnum].floorz, sector[pSprite->sectnum].ceilingz);
+        if (!pFXData->gravity && !xvel[pSprite->index] && !yvel[pSprite->index] && !(zvel[pSprite->index]>>8)) continue;
+        //printf("nSprite %4d type %d pic %d vel (%d,%d,%d) gravity %d pos (%d,%d,%d) floorz %d ceilingz %d\n", nSprite, pSprite->type, pSprite->picnum, xvel[nSprite], yvel[nSprite], zvel[nSprite], pFXData->gravity, pSprite->x, pSprite->y, pSprite->z, sector[pSprite->sectnum].floorz, sector[pSprite->sectnum].ceilingz);
 #endif
-        actAirDrag(pSprite, pFXData->ata);
+        actAirDrag(pSprite, pFXData->airdrag);
         if (xvel[nSprite])
             pSprite->x += xvel[nSprite]>>12;
         if (yvel[nSprite])
@@ -300,7 +302,7 @@ void CFX::fxProcess(void)
                 continue;
             }
         }
-        zvel[nSprite] += pFXData->at6;
+        zvel[nSprite] += pFXData->gravity;
     }
 }
 
@@ -314,7 +316,7 @@ void fxSpawnBlood(spritetype *pSprite, int a2)
         return;
     if (gbAdultContent && gGameOptions.nGameType <= 0)
         return;
-    spritetype *pBlood = gFX.fxSpawn(FX_27, pSprite->sectnum, pSprite->x, pSprite->y, pSprite->z, 0);
+    spritetype *pBlood = gFX.fxSpawn(FX_27, pSprite->sectnum, pSprite->x, pSprite->y, pSprite->z);
     if (pBlood)
     {
         pBlood->ang = 1024;
@@ -325,7 +327,7 @@ void fxSpawnBlood(spritetype *pSprite, int a2)
     }
 }
 
-void sub_746D4(spritetype *pSprite, int a2)
+void fxSpawnPodBlood(spritetype *pSprite, int a2)
 {
     UNREFERENCED_PARAMETER(a2);
     if (pSprite->sectnum < 0 || pSprite->sectnum >= numsectors)
@@ -337,9 +339,9 @@ void sub_746D4(spritetype *pSprite, int a2)
         return;
     spritetype *pSpawn;
     if (pSprite->type == kDudePodGreen)
-        pSpawn = gFX.fxSpawn(FX_53, pSprite->sectnum, pSprite->x, pSprite->y, pSprite->z, 0);
+        pSpawn = gFX.fxSpawn(FX_53, pSprite->sectnum, pSprite->x, pSprite->y, pSprite->z);
     else
-        pSpawn = gFX.fxSpawn(FX_54, pSprite->sectnum, pSprite->x, pSprite->y, pSprite->z, 0);
+        pSpawn = gFX.fxSpawn(FX_54, pSprite->sectnum, pSprite->x, pSprite->y, pSprite->z);
     if (pSpawn)
     {
         pSpawn->ang = 1024;
@@ -356,7 +358,7 @@ void fxSpawnEjectingBrass(spritetype *pSprite, int z, int a3, int a4)
     int y = pSprite->y+mulscale28(pSprite->clipdist-4, Sin(pSprite->ang));
     x += mulscale30(a3, Cos(pSprite->ang+512));
     y += mulscale30(a3, Sin(pSprite->ang+512));
-    spritetype *pBrass = gFX.fxSpawn((FX_ID)(FX_37+Random(3)), pSprite->sectnum, x, y, z, 0);
+    spritetype *pBrass = gFX.fxSpawn((FX_ID)(FX_37+Random(3)), pSprite->sectnum, x, y, z);
     if (pBrass)
     {
         if (!VanillaMode())
@@ -375,7 +377,7 @@ void fxSpawnEjectingShell(spritetype *pSprite, int z, int a3, int a4)
     int y = pSprite->y+mulscale28(pSprite->clipdist-4, Sin(pSprite->ang));
     x += mulscale30(a3, Cos(pSprite->ang+512));
     y += mulscale30(a3, Sin(pSprite->ang+512));
-    spritetype *pShell = gFX.fxSpawn((FX_ID)(FX_40+Random(3)), pSprite->sectnum, x, y, z, 0);
+    spritetype *pShell = gFX.fxSpawn((FX_ID)(FX_40+Random(3)), pSprite->sectnum, x, y, z);
     if (pShell)
     {
         if (!VanillaMode())
@@ -392,8 +394,8 @@ void fxPrecache(void)
 {
     for (int i = 0; i < kFXMax; i++)
     {
-        tilePrecacheTile(gFXData[i].at12, 0);
-        if (gFXData[i].at2)
-            seqPrecacheId(gFXData[i].at2);
+        tilePrecacheTile(gFXData[i].picnum, 0);
+        if (gFXData[i].seq)
+            seqPrecacheId(gFXData[i].seq);
     }
 }

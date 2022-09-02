@@ -1224,10 +1224,51 @@ void DrawStatNumber(const char *pFormat, int nNumber, int nTile, int x, int y, i
 #endif
     x <<= 16;
     sprintf(tempbuf, pFormat, nNumber);
-    for (unsigned int i = 0; i < strlen(tempbuf); i++, x += width*nScale)
+    const size_t nLength = strlen(tempbuf);
+    for (size_t i = 0; i < nLength; i++, x += width*nScale)
     {
-        if (tempbuf[i] == ' ') continue;
-        rotatesprite(x, y<<16, nScale, 0, nTile+tempbuf[i]-'0', nShade, nPalette, nStat | 10, 0, 0, xdim-1, ydim-1);
+        int numTile, numScale, numY;
+        if (tempbuf[i] == ' ')
+            continue;
+#ifdef EDUKE32
+        if (tempbuf[i] == '-')
+        {
+            switch (nTile)
+            {
+            case 2190:
+            case kSBarNumberHealth:
+                numTile = kSBarNegative;
+                break;
+            case 2240:
+            case kSBarNumberAmmo:
+                numTile = kSBarNegative+1;
+                break;
+            case kSBarNumberInv:
+                numTile = kSBarNegative+2;
+                break;
+            case kSBarNumberArmor1:
+                numTile = kSBarNegative+3;
+                break;
+            case kSBarNumberArmor2:
+                numTile = kSBarNegative+4;
+                break;
+            case kSBarNumberArmor3:
+                numTile = kSBarNegative+5;
+                break;
+            default: // unknown font tile type, skip drawing minus sign
+                continue;
+            }
+            numScale = nScale/3;
+            numY = (y<<16) + (1<<15); // offset to center of number row
+        }
+        else // regular number
+#endif
+        {
+            numTile = nTile+tempbuf[i]-'0';
+            numScale = nScale;
+            numY = y<<16;
+        }
+        rotatesprite(x, numY, numScale, 0, numTile, nShade, nPalette, nStat | 10, 0, 0, xdim-1, ydim-1);
     }
 }
 
@@ -1344,24 +1385,6 @@ void viewDrawStats(PLAYER *pPlayer, int x, int y)
     sprintf(buffer, "S:%d/%d", gSecretMgr.nNormalSecretsFound, max(gSecretMgr.nNormalSecretsFound, gSecretMgr.nAllSecrets)); // if we found more than there are, increase the total - some levels have a bugged counter
     viewDrawText(3, buffer, x, y, 20, 0, 0, true, 256);
 }
-
-#ifndef EDUKE32
-#define kSBarNumberHealth 2190
-#define kSBarNumberAmmo 2240
-
-#define kSBarNumberInv 4208 // yellow
-#define kSBarNumberArmor1 4208 // blue
-#define kSBarNumberArmor2 4208 // red
-#define kSBarNumberArmor3 4208 // green
-
-#else
-#define kSBarNumberHealth 9220
-#define kSBarNumberAmmo 9230
-#define kSBarNumberInv 9240
-#define kSBarNumberArmor1 9250
-#define kSBarNumberArmor2 9260
-#define kSBarNumberArmor3 9270
-#endif
 
 struct POWERUPDISPLAY
 {
@@ -1725,10 +1748,13 @@ void UpdateStatusBar(ClockTicks arg)
             DrawStatNumber("%3d", num, kSBarNumberAmmo, 267, 187, 0, 0, 512);
         }
 
-        for (int i = 0; i < 6; i++)
+        if (gGameOptions.nGameType < 2) // don't show keys for bloodbath/teams as all players have every key
         {
-            if (pPlayer->hasKey[i+1])
-                DrawStatMaskedSprite(2552+i, 260+10*i, 170, 0, 0, 512, (int)(65536*0.25));
+            for (int i = 0; i < 6; i++)
+            {
+                if (pPlayer->hasKey[i+1])
+                    DrawStatMaskedSprite(2552+i, 260+10*i, 170, 0, 0, 512, (int)(65536*0.25));
+            }
         }
 
         if (pPlayer->throwPower && pXSprite->health > 0)
@@ -1785,27 +1811,30 @@ void UpdateStatusBar(ClockTicks arg)
         }
         DrawPackItemInStatusBar(pPlayer, 286, 186, 302, 183, 512);
 
-        for (int i = 0; i < 6; i++)
+        if (gGameOptions.nGameType < 2) // don't show keys for bloodbath/teams as all players have every key
         {
-            int nTile = 2220+i;
-            int x, nStat = 0;
-            int y = 200-6;
-            if (i&1)
+            for (int i = 0; i < 6; i++)
             {
-                x = 320-(78+(i>>1)*10);
-                nStat |= 512;
-            }
-            else
-            {
-                x = 73+(i>>1)*10;
-                nStat |= 256;
-            }
-            if (pPlayer->hasKey[i+1])
-                DrawStatSprite(nTile, x, y, 0, 0, nStat);
+                int nTile = 2220+i;
+                int x, nStat = 0;
+                int y = 200-6;
+                if (i&1)
+                {
+                    x = 320-(78+(i>>1)*10);
+                    nStat |= 512;
+                }
+                else
+                {
+                    x = 73+(i>>1)*10;
+                    nStat |= 256;
+                }
+                if (pPlayer->hasKey[i+1])
+                    DrawStatSprite(nTile, x, y, 0, 0, nStat);
 #if 0
-            else
-                DrawStatSprite(nTile, x, y, 40, 5, nStat);
+                else
+                    DrawStatSprite(nTile, x, y, 40, 5, nStat);
 #endif
+            }
         }
         viewDrawStats(pPlayer, 2, 140);
         viewDrawPowerUps(pPlayer);
@@ -1972,6 +2001,12 @@ void viewPrecacheTiles(void)
         tilePrecacheTile(kSBarNumberArmor2 + i, 0);
         tilePrecacheTile(kSBarNumberArmor3 + i, 0);
     }
+#ifdef EDUKE32
+    for (int i = 0; i < 6; i++)
+    {
+        tilePrecacheTile(kSBarNegative + i, 0);
+    }
+#endif
     for (int i = 0; i < 5; i++)
     {
         tilePrecacheTile(gPackIcons[i], 0);
@@ -2034,7 +2069,7 @@ void viewInit(void)
     gViewMap.sub_25C38(0, 0, gZoom, 0, gFollowMap);
 
 #ifdef EDUKE32
-    g_frameDelay = calcFrameDelay(r_maxfps + r_maxfpsoffset);
+    g_frameDelay = calcFrameDelay(r_maxfps);
 #endif
 
     bLoadScreenCrcMatch = tileGetCRC32(kLoadScreen) == kLoadScreenCRC;
@@ -2462,19 +2497,21 @@ tspritetype *viewAddEffect(int nTSprite, VIEW_EFFECT nViewEffect)
         pNSprite->z = getflorzofslope(pTSprite->sectnum, pNSprite->x, pNSprite->y);
         if ((sector[pNSprite->sectnum].floorpicnum >= 4080) && (sector[pNSprite->sectnum].floorpicnum <= 4095) && !VanillaMode()) // if floor has ror, find actual floor
         {
-            int cX = pNSprite->x, cY = pNSprite->y, cZ = pNSprite->z, nSectnum = pNSprite->sectnum;
+            int cX = pNSprite->x, cY = pNSprite->y, cZ = pNSprite->z, cZrel = pNSprite->z, nSectnum = pNSprite->sectnum;
             for (int i = 0; i < 16; i++) // scan through max stacked sectors
             {
                 if (!CheckLink(&cX, &cY, &cZ, &nSectnum)) // if no more floors underneath, abort
                     break;
-                cZ = getflorzofslope(nSectnum, cX, cY);
+                const int newFloorZ = getflorzofslope(nSectnum, cX, cZ);
+                cZrel += newFloorZ - cZ; // get height difference for next sector's ceiling/floor, and add to relative height for shadow
                 if ((sector[nSectnum].floorpicnum < 4080) || (sector[nSectnum].floorpicnum > 4095)) // if current sector is not open air, use as floor for shadow casting, otherwise continue to next sector
                     break;
+                cZ = newFloorZ;
             }
-            pNSprite->x = cX, pNSprite->y = cY, pNSprite->z = cZ, pNSprite->sectnum = nSectnum;
+            pNSprite->z = cZrel;
         }
         pNSprite->shade = 127;
-        pNSprite->cstat |= 2;
+        pNSprite->cstat |= CSTAT_SPRITE_TRANSLUCENT;
         pNSprite->xrepeat = pTSprite->xrepeat;
         pNSprite->yrepeat = pTSprite->yrepeat>>2;
         pNSprite->picnum = pTSprite->picnum;
@@ -2595,12 +2632,12 @@ tspritetype *viewAddEffect(int nTSprite, VIEW_EFFECT nViewEffect)
             pNSprite->cstat |= 48;
             pNSprite->cstat &= ~8;
             pNSprite->picnum = nVoxel;
-            if (pPlayer->curWeapon == 9) // position lifeleech behind player
+            if (pPlayer->curWeapon == kWeaponLifeLeech) // position lifeleech behind player
             {
                 pNSprite->x +=  mulscale30(128, Cos(gView->pSprite->ang));
                 pNSprite->y += mulscale30(128, Sin(gView->pSprite->ang));
             }
-            if ((pPlayer->curWeapon == 9) || (pPlayer->curWeapon == 10))  // make lifeleech/voodoo doll always face viewer like sprite
+            if ((pPlayer->curWeapon == kWeaponLifeLeech) || (pPlayer->curWeapon == kWeaponVoodoo))  // make lifeleech/voodoo doll always face viewer like sprite
                 pNSprite->ang = (gView->pSprite->ang + 1024) & 2047;
         }
 #endif
@@ -2672,6 +2709,12 @@ void viewProcessSprites(int32_t cX, int32_t cY, int32_t cZ, int32_t cA, int32_t 
                 //dassert(nXSprite > 0 && nXSprite < kMaxXSprites);
                 if (nXSprite <= 0 || nXSprite >= kMaxXSprites) break;
                 switch (pTSprite->type) {
+                    #ifdef NOONE_EXTENSIONS
+                    case kModernCondition:
+                    case kModernConditionFalse:
+                        if (!gModernMap) break;
+                        fallthrough__;
+                    #endif
                     case kSwitchToggle:
                     case kSwitchOneWay:
                         if (xsprite[nXSprite].state) nAnim = 1;
@@ -3162,8 +3205,8 @@ void CalcOtherPosition(spritetype *pSprite, int *pX, int *pY, int *pZ, int *vsec
     hitdata_t hitdata;
     hitscan(&pos, *vsectnum, vX, vY, vZ, &hitdata, CLIPMASK1);
     nHSector = hitdata.sect;
-    hX = hitdata.pos.x;
-    hY = hitdata.pos.y;
+    hX = hitdata.xyz.x;
+    hY = hitdata.xyz.y;
 #endif
     int dX = hX-*pX;
     int dY = hY-*pY;
@@ -3218,8 +3261,8 @@ void CalcPosition(spritetype *pSprite, int *pX, int *pY, int *pZ, int *vsectnum,
     hitdata_t hitdata;
     hitscan(&pos, *vsectnum, vX, vY, vZ, &hitdata, CLIPMASK1);
     nHSector = hitdata.sect;
-    hX = hitdata.pos.x;
-    hY = hitdata.pos.y;
+    hX = hitdata.xyz.x;
+    hY = hitdata.xyz.y;
 #endif
     int dX = hX-*pX;
     int dY = hY-*pY;
@@ -3256,15 +3299,15 @@ struct {
     int nScale;
     short nX, nY;
 } burnTable[9] = {
-     { 2101, 2, 0, 118784, 10, 220 },
-     { 2101, 2, 0, 110592, 40, 220 },
-     { 2101, 2, 0, 81920, 85, 220 },
-     { 2101, 2, 0, 69632, 120, 220 },
-     { 2101, 2, 0, 61440, 160, 220 },
-     { 2101, 2, 0, 73728, 200, 220 },
-     { 2101, 2, 0, 77824, 235, 220 },
-     { 2101, 2, 0, 110592, 275, 220 },
-     { 2101, 2, 0, 122880, 310, 220 }
+     { 2101, RS_AUTO, 0, 118784, 10, 220 },
+     { 2101, RS_AUTO, 0, 110592, 40, 220 },
+     { 2101, RS_AUTO, 0, 81920, 85, 220 },
+     { 2101, RS_AUTO, 0, 69632, 120, 220 },
+     { 2101, RS_AUTO, 0, 61440, 160, 220 },
+     { 2101, RS_AUTO, 0, 73728, 200, 220 },
+     { 2101, RS_AUTO, 0, 77824, 235, 220 },
+     { 2101, RS_AUTO, 0, 110592, 275, 220 },
+     { 2101, RS_AUTO, 0, 122880, 310, 220 }
 };
 
 void viewBurnTime(int gScale)
@@ -3273,13 +3316,24 @@ void viewBurnTime(int gScale)
 
     for (int i = 0; i < 9; i++)
     {
-        int nTile = burnTable[i].nTile+qanimateoffs(burnTable[i].nTile,32768+i);
+        const int nTile = burnTable[i].nTile+qanimateoffs(burnTable[i].nTile,32768+i);
         int nScale = burnTable[i].nScale;
         if (gScale < 600)
         {
             nScale = scale(nScale, gScale, 600);
         }
-        rotatesprite(burnTable[i].nX<<16, burnTable[i].nY<<16, nScale, 0, nTile,
+        int xoffset = burnTable[i].nX;
+#ifdef EDUKE32
+        if (r_usenewaspect)
+        {
+            xoffset = scale(xoffset-(320>>1), 320>>1, 266>>1); // scale flame position
+            xoffset = scale(xoffset<<16, xscale, yscale); // multiply by window ratio
+            xoffset += (320>>1)<<16; // offset to center
+        }
+        else
+#endif
+            xoffset <<= 16;
+        rotatesprite(xoffset, burnTable[i].nY<<16, nScale, 0, nTile,
 #ifndef EDUKE32
             0, burnTable[i].nPal, burnTable[i].nStat, windowx1, windowy1, windowx2, windowy2);
 #else
@@ -3469,7 +3523,7 @@ void viewUpdateDelirium(void)
     if ((powerCount = powerupCheck(gView, kPwUpDeliriumShroom)) != 0)
     {
         int tilt1 = 170, tilt2 = 170, pitch = 20;
-        int timer = (int)gFrameClock*4;
+        int timer = (int)gFrameClock << 1;
         if (powerCount < 512)
         {
             int powerScale = (powerCount<<16) / 512;
@@ -3600,7 +3654,8 @@ void viewDrawScreen(void)
             newaspect_enable = 1;
             videoSetCorrectedAspect();
         }
-        renderSetAspect(Blrintf(float(viewingrange) * tanf(gFov * (PI/360.f))), yxaspect);
+        const int viewingRange_fov = Blrintf(float(viewingrange) * tanf(gFov * (PI/360.f)));
+        renderSetAspect(viewingRange_fov, yxaspect);
 #endif
         int cX = gView->pSprite->x;
         int cY = gView->pSprite->y;
@@ -3797,13 +3852,13 @@ void viewDrawScreen(void)
             g_visibility = (int32_t)(ClipLow(gVisibility-32*pOther->visibility, 0) * (numplayers > 1 ? 1.f : r_ambientlightrecip));
             int vc4, vc8;
             getzsofslope(vcc, vd8, vd4, &vc8, &vc4);
-            if (vd0 >= vc4)
+            if ((vd0 > vc4-(1<<7)) && (gUpperLink[vcc] == -1)) // clamp to floor
             {
-                vd0 = vc4-(gUpperLink[vcc] >= 0 ? 0 : (8<<8));
+                vd0 = vc4-(1<<7);
             }
-            if (vd0 <= vc8)
+            if ((vd0 < vc8+(1<<7)) && (gLowerLink[vcc] == -1)) // clamp to ceiling
             {
-                vd0 = vc8+(gLowerLink[vcc] >= 0 ? 0 : (8<<8));
+                vd0 = vc8+(1<<7);
             }
             v54 = ClipRange(v54, -200, 200);
 RORHACKOTHER:
@@ -3828,6 +3883,9 @@ RORHACKOTHER:
             viewProcessSprites(vd8, vd4, vd0, v50, gInterpolate);
             renderDrawMasks();
             renderRestoreTarget();
+#ifdef EDUKE32
+            renderSetAspect(viewingRange_fov, yxaspect);
+#endif
         }
         else
         {
@@ -3878,15 +3936,16 @@ RORHACKOTHER:
         }
         int vfc, vf8;
         getzsofslope(nSectnum, cX, cY, &vfc, &vf8);
-        if (cZ >= vf8)
+        if ((cZ > vf8-(1<<7)) && (gUpperLink[nSectnum] == -1)) // clamp to floor
         {
-            cZ = vf8-(gUpperLink[nSectnum] >= 0 ? 0 : (8<<8));
+            cZ = vf8-(1<<7);
         }
-        if (cZ <= vfc)
+        if ((cZ < vfc+(1<<7)) && (gLowerLink[nSectnum] == -1)) // clamp to ceiling
         {
-            cZ = vfc+(gLowerLink[nSectnum] >= 0 ? 0 : (8<<8));
+            cZ = vfc+(1<<7);
         }
         q16horiz = ClipRange(q16horiz, F16(-200), F16(200));//t3 = getusecticks()-tstart;tstart = getusecticks();
+        int nCountROR = 0;
 RORHACK:
         int ror_status[16];
         for (int i = 0; i < 16; i++)
@@ -3914,10 +3973,11 @@ RORHACK:
         for (int i = 0; i < 16; i++)
             if (ror_status[i] != TestBitString(gotpic, 4080+i))
                 do_ror_hack = true;
-        if (do_ror_hack)
+        if (do_ror_hack && (nCountROR < 32))
         {
             gView->pSprite->cstat = bakCstat;
             spritesortcnt = 0;
+            nCountROR++;
             goto RORHACK;
         }//t4 = getusecticks()-tstart;tstart = getusecticks();
         sub_5571C(1);
@@ -3987,10 +4047,10 @@ RORHACK:
             newaspect_enable = 0;
         renderSetAspect(viewingRange, yxAspect);
 #endif
+#if 0
         int nClipDist = gView->pSprite->clipdist<<2;
         int ve8, vec, vf0, vf4;
         GetZRange(gView->pSprite, &vf4, &vf0, &vec, &ve8, nClipDist, 0);
-#if 0
         int tmpSect = nSectnum;
         if ((vf0 & 0xc000) == 0x4000)
         {
@@ -4031,7 +4091,8 @@ RORHACK:
                 else if (gView->pXSprite->health > 0) playerQavSceneDraw(gView, nShade, cX, cY, nPalette);
                 else {
                     gView->sceneQav = gView->weaponQav = -1;
-                    gView->weaponTimer = gView->curWeapon = 0;
+                    gView->weaponTimer = 0;
+                    gView->curWeapon = kWeaponNone;
                 }
             #else
                 WeaponDraw(gView, nShade, cX, cY, nPalette);

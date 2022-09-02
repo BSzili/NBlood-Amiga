@@ -114,12 +114,23 @@ public:
                 i++;
         }
     }
-    void Kill(EVENT &evn)
+    void Kill(int idx, int type, int causer)
     {
         for (unsigned int i = 1; i <= fNodeCount;)
         {
             EVENT &nItem = queueItems[i].at4;
-            if (!memcmp(&nItem, &evn, sizeof(EVENT)))
+            if (nItem.index == idx && nItem.type == type && nItem.causer == causer)
+                Delete(i);
+            else
+                i++;
+        }
+    }
+    void Kill(int a1, int a2, CALLBACK_ID a3)
+    {
+        for (unsigned int i = 1; i <= fNodeCount;)
+        {
+            EVENT &nItem = queueItems[i].at4;
+            if (nItem.index == a1 && nItem.type == a2 && nItem.cmd == kCmdCallback && nItem.funcID == (unsigned int)a3)
                 Delete(i);
             else
                 i++;
@@ -149,6 +160,7 @@ public:
         return PQueue->Remove();
     }
     void Kill(int, int);
+    void Kill(int idx, int type, int causer);
     void Kill(int, int, CALLBACK_ID);
 };
 
@@ -158,17 +170,25 @@ void EventQueue::Kill(int a1, int a2)
 #ifndef EDUKE32
     PQueue->Kill(a1, a2);
 #else
-    PQueue->Kill([=](EVENT nItem)->bool {return nItem.index == a1 && nItem.type == a2; });
+    PQueue->Kill([=](EVENT nItem)->bool {return (nItem.index == a1 && nItem.type == a2); });
+#endif
+}
+
+void EventQueue::Kill(int idx, int type, int causer)
+{
+#ifndef EDUKE32
+    PQueue->Kill(idx, type, causer);
+#else
+    PQueue->Kill([=](EVENT nItem)->bool { return (nItem.index == idx && nItem.type == type && nItem.causer == causer); });
 #endif
 }
 
 void EventQueue::Kill(int a1, int a2, CALLBACK_ID a3)
 {
-    EVENT evn = { (unsigned int)a1, (unsigned int)a2, kCmdCallback, (unsigned int)a3 };
 #ifndef EDUKE32
-    PQueue->Kill(evn);
+    PQueue->Kill(a1, a2, a3);
 #else
-    PQueue->Kill([=](EVENT nItem)->bool {return !memcmp(&nItem, &evn, sizeof(EVENT)); });
+    PQueue->Kill([=](EVENT nItem)->bool {return (nItem.index == a1 && nItem.type == a2 && nItem.cmd == kCmdCallback && nItem.funcID == (unsigned int)a3); });
 #endif
 }
 
@@ -450,7 +470,7 @@ char evGetSourceState(int nType, int nIndex)
     return 0;
 }
 
-void evSend(int nIndex, int nType, int rxId, COMMAND_ID command)
+void evSend(int nIndex, int nType, int rxId, COMMAND_ID command, int causerID)
 {
     switch (command) {
         case kCmdState:
@@ -467,6 +487,11 @@ void evSend(int nIndex, int nType, int rxId, COMMAND_ID command)
     event.index = nIndex;
     event.type = nType;
     event.cmd = command;
+    #ifdef NOONE_EXTENSIONS
+        event.causer = (gModernMap) ? causerID : kCauserGame;
+    #else
+        event.causer = kCauserGame;
+    #endif
 
     switch (rxId) {
     case kChannelTextOver:
@@ -537,24 +562,60 @@ void evSend(int nIndex, int nType, int rxId, COMMAND_ID command)
     }
 
     #ifdef NOONE_EXTENSIONS
-    if (gModernMap) {
-        
+    if (gModernMap)
+    {       
         // allow to send commands on player sprites
         PLAYER* pPlayer = NULL;
-        if (playerRXRngIsFine(rxId)) {
+        if (playerRXRngIsFine(rxId))
+        {
             if ((pPlayer = getPlayerById((rxId - kChannelPlayer7) + kMaxPlayers)) != NULL)
-                trMessageSprite(pPlayer->nSprite, event);
-            return;
-        } else if (rxId == kChannelAllPlayers) {
-            for (int i = 0; i < kMaxPlayers; i++) {
-                if ((pPlayer = getPlayerById(i)) != NULL)
+            {
+                if (command == kCmdEventKillFull)
+                    evKill(pPlayer->nSprite, OBJ_SPRITE);
+                else
                     trMessageSprite(pPlayer->nSprite, event);
             }
+           
+            return;
+
+        }
+        else if (rxId == kChannelAllPlayers)
+        {
+            for (int i = 0; i < kMaxPlayers; i++)
+            {
+                if ((pPlayer = getPlayerById(i)) != NULL)
+                {
+                    if (command == kCmdEventKillFull)
+                        evKill(pPlayer->nSprite, OBJ_SPRITE);
+                    else
+                        trMessageSprite(pPlayer->nSprite, event);
+                }
+            }
+            
             return;
         }
-
+        // send command on sprite which created the event sequence
+        else if (rxId == kChannelEventCauser && event.causer < kCauserGame)
+        {
+            spritetype* pSpr = &sprite[event.causer];
+            if (!(pSpr->flags & kHitagFree) && !(pSpr->flags & kHitagRespawn))
+            {
+                if (command == kCmdEventKillFull)
+                    evKill(causerID, OBJ_SPRITE);
+                else
+                    trMessageSprite(event.causer, event);
+            }
+            
+            return;
+        }
+        else if (command == kCmdEventKillFull)
+        {
+            killEvents(rxId, command);
+            return;
+        }
     }
     #endif
+
     for (int i = bucketHead[rxId]; i < bucketHead[rxId+1]; i++) {
         if (event.type != rxBucket[i].type || event.index != rxBucket[i].index) {
             switch (rxBucket[i].type) {
@@ -584,7 +645,7 @@ void evSend(int nIndex, int nType, int rxId, COMMAND_ID command)
     }
 }
 
-void evPost(int nIndex, int nType, unsigned int nDelta, COMMAND_ID command) {
+void evPost(int nIndex, int nType, unsigned int nDelta, COMMAND_ID command, int causerID) {
     dassert(command != kCmdCallback);
     if (command == kCmdState) command = evGetSourceState(nType, nIndex) ? kCmdOn : kCmdOff;
     else if (command == kCmdNotState) command = evGetSourceState(nType, nIndex) ? kCmdOff : kCmdOn;
@@ -592,6 +653,12 @@ void evPost(int nIndex, int nType, unsigned int nDelta, COMMAND_ID command) {
     evn.index = nIndex;
     evn.type = nType;
     evn.cmd = command;
+    #ifdef NOONE_EXTENSIONS
+        evn.causer = (gModernMap) ? causerID : kCauserGame;
+    #else
+        evn.causer = kCauserGame;
+    #endif
+
     eventQ.PQueue->Insert((int)gFrameClock+nDelta, evn);
 }
 
@@ -601,6 +668,7 @@ void evPost(int nIndex, int nType, unsigned int nDelta, CALLBACK_ID callback) {
     evn.type = nType;
     evn.cmd = kCmdCallback;
     evn.funcID = callback;
+    evn.causer = kCauserGame;
     eventQ.PQueue->Insert((int)gFrameClock+nDelta, evn);
 }
 
@@ -648,6 +716,16 @@ void evProcess(unsigned int nTime)
 void evKill(int a1, int a2)
 {
     eventQ.Kill(a1, a2);
+}
+
+void evKill(int idx, int type, int causer)
+{
+    #ifdef NOONE_EXTENSIONS
+    if (gModernMap)
+        eventQ.Kill(idx, type, causer);
+    else
+    #endif
+        eventQ.Kill(idx, type);
 }
 
 void evKill(int a1, int a2, CALLBACK_ID a3)

@@ -640,6 +640,15 @@ void playerResetPowerUps(PLAYER* pPlayer)
 
 void playerResetPosture(PLAYER* pPlayer) {
     memcpy(pPlayer->pPosture, gPostureDefaults, sizeof(gPostureDefaults));
+    if (!VanillaMode()) {
+        pPlayer->bobPhase = 0;
+        pPlayer->bobAmp = 0;
+        pPlayer->swayAmp = 0;
+        pPlayer->bobHeight = 0;
+        pPlayer->bobWidth = 0;
+        pPlayer->swayHeight = 0;
+        pPlayer->swayWidth = 0;
+    }
 }
 
 void playerStart(int nPlayer, int bNewLevel)
@@ -739,7 +748,7 @@ void playerStart(int nPlayer, int bNewLevel)
     pPlayer->relAim.dz = 0;
     pPlayer->aimTarget = -1;
     pPlayer->zViewVel = pPlayer->zWeaponVel;
-    if (!(gGameOptions.nGameType == 1 && gGameOptions.bKeepKeysOnRespawn && !bNewLevel))
+    if (!(gGameOptions.nGameType == 1 && gGameOptions.bPlayerKeys > PLAYERKEYSMODE::LOSTONDEATH && !bNewLevel))
         for (int i = 0; i < 8; i++)
             pPlayer->hasKey[i] = gGameOptions.nGameType >= 2;
     pPlayer->hasFlag = 0;
@@ -753,7 +762,7 @@ void playerStart(int nPlayer, int bNewLevel)
     gFullMap = 0;
     pPlayer->throwPower = 0;
     pPlayer->deathTime = 0;
-    pPlayer->nextWeapon = 0;
+    pPlayer->nextWeapon = kWeaponNone;
     xvel[pSprite->index] = yvel[pSprite->index] = zvel[pSprite->index] = 0;
     pInput->q16turn = 0;
     pInput->keyFlags.word = 0;
@@ -826,10 +835,10 @@ void playerReset(PLAYER *pPlayer)
         pPlayer->hasWeapon[i] = gInfiniteAmmo;
         pPlayer->weaponMode[i] = 0;
     }
-    pPlayer->hasWeapon[1] = 1;
-    pPlayer->curWeapon = 0;
+    pPlayer->hasWeapon[kWeaponPitchfork] = 1;
+    pPlayer->curWeapon = kWeaponNone;
     pPlayer->qavCallback = -1;
-    pPlayer->input.newWeapon = 1;
+    pPlayer->input.newWeapon = kWeaponPitchfork;
     for (int i = 0; i < 14; i++)
     {
         pPlayer->weaponOrder[0][i] = dword_136400[i];
@@ -859,7 +868,6 @@ void playerReset(PLAYER *pPlayer)
     #endif
     // reset posture (mainly required for resetting movement speed and jump height)
     playerResetPosture(pPlayer);
-
 }
 
 int gPlayerScores[kMaxPlayers];
@@ -889,7 +897,7 @@ void playerInit(int nPlayer, unsigned int a2)
         playerReset(pPlayer);
 }
 
-char sub_3A158(PLAYER *a1, spritetype *a2)
+char findDroppedLeech(PLAYER *a1, spritetype *a2)
 {
     for (int nSprite = headspritestat[kStatThing]; nSprite >= 0; nSprite = nextspritestat[nSprite])
     {
@@ -943,7 +951,7 @@ char PickupItem(PLAYER *pPlayer, spritetype *pItem) {
                     if ((pPlayer->hasFlag & 1) == 0 && pXItem->state) {
                         pPlayer->hasFlag |= 1;
                         pPlayer->used2[0] = pItem->index;
-                        trTriggerSprite(pItem->index, pXItem, kCmdOff);
+                        trTriggerSprite(pItem->index, pXItem, kCmdOff, pPlayer->nSprite);
                         sprintf(buffer, "%s stole Blue Flag", gProfile[pPlayer->nPlayer].name);
                         sndStartSample(8007, 255, 2, 0);
                         viewSetMessage(buffer);
@@ -955,7 +963,7 @@ char PickupItem(PLAYER *pPlayer, spritetype *pItem) {
                     if ((pPlayer->hasFlag & 1) != 0 && !pXItem->state) {
                         pPlayer->hasFlag &= ~1;
                         pPlayer->used2[0] = -1;
-                        trTriggerSprite(pItem->index, pXItem, kCmdOn);
+                        trTriggerSprite(pItem->index, pXItem, kCmdOn, pPlayer->nSprite);
                         sprintf(buffer, "%s returned Blue Flag", gProfile[pPlayer->nPlayer].name);
                         sndStartSample(8003, 255, 2, 0);
                         viewSetMessage(buffer);
@@ -966,7 +974,7 @@ char PickupItem(PLAYER *pPlayer, spritetype *pItem) {
                         pPlayer->used2[1] = -1;
                         gPlayerScores[pPlayer->teamId] += 10;
                         gPlayerScoreTicks[pPlayer->teamId] += 240;
-                        evSend(0, 0, 81, kCmdOn);
+                        evSend(0, 0, 81, kCmdOn, pPlayer->nSprite);
                         sprintf(buffer, "%s captured Red Flag!", gProfile[pPlayer->nPlayer].name);
                         sndStartSample(8001, 255, 2, 0);
                         viewSetMessage(buffer);
@@ -987,7 +995,7 @@ char PickupItem(PLAYER *pPlayer, spritetype *pItem) {
                     if ((pPlayer->hasFlag & 2) == 0 && pXItem->state) {
                         pPlayer->hasFlag |= 2;
                         pPlayer->used2[1] = pItem->index;
-                        trTriggerSprite(pItem->index, pXItem, kCmdOff);
+                        trTriggerSprite(pItem->index, pXItem, kCmdOff, pPlayer->nSprite);
                         sprintf(buffer, "%s stole Red Flag", gProfile[pPlayer->nPlayer].name);
                         sndStartSample(8006, 255, 2, 0);
                         viewSetMessage(buffer);
@@ -999,7 +1007,7 @@ char PickupItem(PLAYER *pPlayer, spritetype *pItem) {
                     {
                         pPlayer->hasFlag &= ~2;
                         pPlayer->used2[1] = -1;
-                        trTriggerSprite(pItem->index, pXItem, kCmdOn);
+                        trTriggerSprite(pItem->index, pXItem, kCmdOn, pPlayer->nSprite);
                         sprintf(buffer, "%s returned Red Flag", gProfile[pPlayer->nPlayer].name);
                         sndStartSample(8002, 255, 2, 0);
                         viewSetMessage(buffer);
@@ -1010,7 +1018,7 @@ char PickupItem(PLAYER *pPlayer, spritetype *pItem) {
                         pPlayer->used2[0] = -1;
                         gPlayerScores[pPlayer->teamId] += 10;
                         gPlayerScoreTicks[pPlayer->teamId] += 240;
-                        evSend(0, 0, 80, kCmdOn);
+                        evSend(0, 0, 80, kCmdOn, pPlayer->nSprite);
                         sprintf(buffer, "%s captured Blue Flag!", gProfile[pPlayer->nPlayer].name);
                         sndStartSample(8000, 255, 2, 0);
                         viewSetMessage(buffer);
@@ -1092,6 +1100,11 @@ char PickupItem(PLAYER *pPlayer, spritetype *pItem) {
             if (pPlayer->hasKey[pItem->type-99]) return 0;
             pPlayer->hasKey[pItem->type-99] = 1;
             pickupSnd = 781;
+            if (gGameOptions.bPlayerKeys == PLAYERKEYSMODE::SHARED) {
+                for (int i = connecthead; i != -1; i = connectpoint2[i]) {
+                    gPlayer[i].hasKey[pItem->type-99] = 1;
+                }
+            }
             break;
         case kItemHealthMedPouch:
         case kItemHealthLifeEssense:
@@ -1144,7 +1157,7 @@ char PickupWeapon(PLAYER *pPlayer, spritetype *pWeapon) {
     int nWeaponType = pWeaponItemData->type;
     int nAmmoType = pWeaponItemData->ammoType;
     if (!pPlayer->hasWeapon[nWeaponType] || gGameOptions.nWeaponSettings == 2 || gGameOptions.nWeaponSettings == 3) {
-        if (pWeapon->type == kItemWeaponLifeLeech && gGameOptions.nGameType > 1 && sub_3A158(pPlayer, NULL))
+        if (pWeapon->type == kItemWeaponLifeLeech && gGameOptions.nGameType > 1 && findDroppedLeech(pPlayer, NULL))
             return 0;
         pPlayer->hasWeapon[nWeaponType] = 1;
         if (nAmmoType == -1) return 0;
@@ -1208,7 +1221,7 @@ void PickUp(PLAYER *pPlayer, spritetype *pSprite)
     else if (pSprite->extra > 0) {
         XSPRITE *pXSprite = &xsprite[pSprite->extra];
         if (pXSprite->Pickup)
-            trTriggerSprite(pSprite->index, pXSprite, kCmdSpritePickup);
+            trTriggerSprite(pSprite->index, pXSprite, kCmdSpritePickup, pPlayer->nSprite);
     }
         
     if (!actCheckRespawn(pSprite)) 
@@ -1282,7 +1295,7 @@ int ActionScan(PLAYER *pPlayer, int *a2, int *a3)
                 XSPRITE *pXSprite = &xsprite[*a3];
                 if (pSprite->type == kThingDroppedLifeLeech)
                 {
-                    if (gGameOptions.nGameType > 1 && sub_3A158(pPlayer, pSprite))
+                    if (gGameOptions.nGameType > 1 && findDroppedLeech(pPlayer, pSprite))
                         return -1;
                     pXSprite->data4 = pPlayer->nPlayer;
                     pXSprite->isTriggered = 0;
@@ -1303,7 +1316,7 @@ int ActionScan(PLAYER *pPlayer, int *a2, int *a3)
                     zvel[*a2] += mulscale16(z, t2);
                 }
                 if (pXSprite->Push && !pXSprite->state && !pXSprite->isTriggered)
-                    trTriggerSprite(*a2, pXSprite, kCmdSpritePush);
+                    trTriggerSprite(*a2, pXSprite, kCmdSpritePush, pPlayer->nSprite);
             }
             break;
         case 0:
@@ -1479,7 +1492,14 @@ void ProcessInput(PLAYER *pPlayer)
     }
 #ifdef EDUKE32
     if (pPlayer == gMe && numplayers == 1)
-        gViewAngleAdjust += float(pSprite->ang - pPlayer->angold);
+    {
+        int nDeltaAngle = pSprite->ang - pPlayer->angold;
+        if (nDeltaAngle >= 1024) // handle unsigned overflow
+            nDeltaAngle += -2048;
+        else if (nDeltaAngle <= -1024)
+            nDeltaAngle += 2048;
+        gViewAngleAdjust += float(nDeltaAngle);
+    }
 #endif
     pPlayer->q16ang = (pPlayer->q16ang+fix16_from_int(pSprite->ang-pPlayer->angold))&0x7ffffff;
     pPlayer->angold = pSprite->ang = fix16_to_int(pPlayer->q16ang);
@@ -1530,7 +1550,7 @@ void ProcessInput(PLAYER *pPlayer)
                     sndStartSample(3062, 255, 2, 0);
                 }
                 if (!key || pPlayer->hasKey[key])
-                    trTriggerSector(a2, pXSector, kCmdSpritePush);
+                    trTriggerSector(a2, pXSector, kCmdSpritePush, pPlayer->nSprite);
                 else if (pPlayer == gMe)
                 {
                     viewSetMessage("That requires a key.");
@@ -1548,7 +1568,9 @@ void ProcessInput(PLAYER *pPlayer)
                 sndStartSample(3062, 255, 2, 0);
             }
             if (!key || pPlayer->hasKey[key])
-                trTriggerWall(a2, pXWall, kCmdWallPush);
+            {
+                trTriggerWall(a2, pXWall, kCmdWallPush, pPlayer->nSprite);
+            }
             else if (pPlayer == gMe)
             {
                 viewSetMessage("That requires a key.");
@@ -1563,7 +1585,7 @@ void ProcessInput(PLAYER *pPlayer)
             if (pXSprite->locked && pPlayer == gMe && pXSprite->lockMsg)
                 trTextOver(pXSprite->lockMsg);
             if (!key || pPlayer->hasKey[key])
-                trTriggerSprite(a2, pXSprite, kCmdSpritePush);
+                trTriggerSprite(a2, pXSprite, kCmdSpritePush, pPlayer->nSprite);
             else if (pPlayer == gMe)
             {
                 viewSetMessage("That requires a key.");
@@ -1951,16 +1973,16 @@ void FragPlayer(PLAYER *pPlayer, int nSprite)
         if (nTeam1 == 0)
         {
             if (nTeam1 != nTeam2)
-                evSend(0, 0, 15, kCmdToggle);
+                evSend(0, 0, 15, kCmdToggle, pPlayer->nSprite);
             else
-                evSend(0, 0, 16, kCmdToggle);
+                evSend(0, 0, 16, kCmdToggle, pPlayer->nSprite);
         }
         else
         {
             if (nTeam1 == nTeam2)
-                evSend(0, 0, 16, kCmdToggle);
+                evSend(0, 0, 16, kCmdToggle, pPlayer->nSprite);
             else
-                evSend(0, 0, 15, kCmdToggle);
+                evSend(0, 0, 15, kCmdToggle, pPlayer->nSprite);
         }
     }
 }
@@ -2096,7 +2118,7 @@ int playerDamageSprite(int nSource, PLAYER *pPlayer, DAMAGE_TYPE nDamageType, in
         }
         pPlayer->deathTime = 0;
         pPlayer->qavLoop = 0;
-        pPlayer->curWeapon = 0;
+        pPlayer->curWeapon = kWeaponNone;
         pPlayer->fraggerId = nSource;
         pPlayer->voodooTargets = 0;
         if (nDamageType == kDamageExplode && nDamage < (9<<4))
@@ -2142,7 +2164,7 @@ int playerDamageSprite(int nSource, PLAYER *pPlayer, DAMAGE_TYPE nDamageType, in
     {
         powerupClear(pPlayer);
         if (nXSector > 0 && xsector[nXSector].Exit)
-            trTriggerSector(pSprite->sectnum, &xsector[nXSector], kCmdSectorExit);
+            trTriggerSector(pSprite->sectnum, &xsector[nXSector], kCmdSectorExit, nSource);
         pSprite->flags |= 7;
         for (int p = connecthead; p >= 0; p = connectpoint2[p])
         {
@@ -2150,7 +2172,7 @@ int playerDamageSprite(int nSource, PLAYER *pPlayer, DAMAGE_TYPE nDamageType, in
                 gPlayer[p].fraggerId = -1;
         }
         FragPlayer(pPlayer, nSource);
-        trTriggerSprite(nSprite, pXSprite, kCmdOff);
+        trTriggerSprite(nSprite, pXSprite, kCmdOff, nSource);
 
         #ifdef NOONE_EXTENSIONS
         // allow drop items and keys in multiplayer
@@ -2193,7 +2215,7 @@ int UseAmmo(PLAYER *pPlayer, int nAmmoType, int nDec)
     return pPlayer->ammoCount[nAmmoType];
 }
 
-void sub_41250(PLAYER *pPlayer)
+void voodooTarget(PLAYER *pPlayer)
 {
     int v4 = pPlayer->aim.dz;
     int dz = pPlayer->zWeapon-pPlayer->pSprite->z;
@@ -2263,7 +2285,7 @@ void PlayerSurvive(int, int nXSprite)
                 sprintf(buffer, "%s lives again!", gProfile[pPlayer->nPlayer].name);
                 viewSetMessage(buffer);
             }
-            pPlayer->input.newWeapon = 1;
+            pPlayer->input.newWeapon = kWeaponPitchfork;
         }
     }
 }

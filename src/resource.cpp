@@ -456,6 +456,7 @@ void Resource::AddExternalResource(const char *name, const char *type, int id, i
         strcpy(node->type, type2);
         strcpy(node->name, name2);
         strcpy(node->path, path);
+        node->id = -1;
     }
     node->size = size;
     node->flags = DICT_EXTERNAL | flags;
@@ -554,6 +555,7 @@ void Resource::AddFromBuffer(const char* name, const char* type, char* data, int
         node->name = (char*)Alloc(nNameLength+1);
         strcpy(node->type, type2);
         strcpy(node->name, name2);
+        node->id = -1;
     }
     node->size = size;
     node->flags = DICT_BUFFER | flags;
@@ -604,7 +606,7 @@ void Resource::AddFromBuffer(const char* name, const char* type, char* data, int
 }
 
 void *Resource::Alloc(int nSize)
-{//printf("%s(%d)\n", __FUNCTION__, nSize);
+{
 #ifdef USE_QHEAP
     dassert(heap != NULL);
     dassert(nSize != 0);
@@ -829,7 +831,7 @@ void Resource::Read(DICTNODE *n, void *p)
             {
                 size = n->size;
             }
-            Crypt(n->ptr, size, 0);
+            Crypt(p, size, 0);
         }
 #if B_BIG_ENDIAN == 1
         if (!Bstrcmp(n->type, "QAV"))
@@ -1068,7 +1070,6 @@ void Resource::PrecacheSounds(void)
             if (KB_KeyPressed(sc_Space)) break;
 #endif
             Load(pNode);
-
             gameHandleEvents();
         }
     }
