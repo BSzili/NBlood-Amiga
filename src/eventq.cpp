@@ -83,7 +83,7 @@ public:
         queueItems[k] = queueItems[fNodeCount--];
         Downheap(k);
     }
-    void Insert(uint32_t a1, EVENT a2)
+    void Insert(uint32_t a1, const EVENT &a2)
     {
         dassert(fNodeCount < kPQueueSize);
         fNodeCount++;
@@ -114,6 +114,7 @@ public:
                 i++;
         }
     }
+#ifndef __AMIGA__
     void Kill(int idx, int type, int causer)
     {
         for (unsigned int i = 1; i <= fNodeCount;)
@@ -125,6 +126,7 @@ public:
                 i++;
         }
     }
+#endif
     void Kill(int a1, int a2, CALLBACK_ID a3)
     {
         for (unsigned int i = 1; i <= fNodeCount;)
@@ -160,7 +162,9 @@ public:
         return PQueue->Remove();
     }
     void Kill(int, int);
+#ifndef __AMIGA__
     void Kill(int idx, int type, int causer);
+#endif
     void Kill(int, int, CALLBACK_ID);
 };
 
@@ -174,6 +178,7 @@ void EventQueue::Kill(int a1, int a2)
 #endif
 }
 
+#ifndef __AMIGA__
 void EventQueue::Kill(int idx, int type, int causer)
 {
 #ifndef EDUKE32
@@ -182,6 +187,7 @@ void EventQueue::Kill(int idx, int type, int causer)
     PQueue->Kill([=](EVENT nItem)->bool { return (nItem.index == idx && nItem.type == type && nItem.causer == causer); });
 #endif
 }
+#endif
 
 void EventQueue::Kill(int a1, int a2, CALLBACK_ID a3)
 {
@@ -740,6 +746,16 @@ public:
     virtual void Save();
 };
 
+#ifdef __AMIGA__
+// TODO save-game compatibility
+struct SAVEDEVENT {
+    unsigned int index:     14; // index
+    unsigned int type:      3; // type
+    unsigned int cmd:       8; // cmd
+    unsigned int funcID:    8; // callback
+};
+#endif
+
 void EventQLoadSave::Load()
 {
     if (eventQ.PQueue)
@@ -760,7 +776,17 @@ void EventQLoadSave::Load()
         EVENT event = {};
         unsigned int eventtime;
         Read(&eventtime, sizeof(eventtime));
+#ifdef __AMIGA__
+        SAVEDEVENT se; // TODO save-game compatibility
+        Read(&se, sizeof(se));
+        event.index = se.index;
+        event.type = se.type;
+        event.cmd = se.cmd;
+        event.funcID = se.funcID;
+        event.causer = kCauserGame;
+#else
         Read(&event, sizeof(event));
+#endif
         eventQ.PQueue->Insert(eventtime, event);
     }
     Read(rxBucket, sizeof(rxBucket));
@@ -784,7 +810,16 @@ void EventQLoadSave::Save()
         eventstime[i] = eventQ.PQueue->LowestPriority();
         events[i] = eventQ.ERemove();
         Write(&eventstime[i], sizeof(eventstime[i]));
+#ifdef __AMIGA__
+        SAVEDEVENT se; // TODO save-game compatibility
+        se.index = events[i].index;
+        se.type = events[i].type;
+        se.cmd = events[i].cmd;
+        se.funcID = events[i].funcID;
+        Write(&se, sizeof(se));
+#else
         Write(&events[i], sizeof(events[i]));
+#endif
     }
     dassert(eventQ.PQueue->Size() == 0);
     for (int i = 0; i < nEvents; i++)

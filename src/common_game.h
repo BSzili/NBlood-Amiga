@@ -40,7 +40,11 @@ extern int g_useCwd;
 
 #define BLOODWIDESCREENDEF "blood_widescreen.def"
 
+#ifdef __AMIGA__
+#define BYTEVERSION 103 // TODO save-game compatibility 
+#else
 #define BYTEVERSION 104
+#endif
 #define EXEVERSION 101
 
 void _SetErrorLoc(const char *pzFile, int nLine);

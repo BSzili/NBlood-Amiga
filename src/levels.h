@@ -56,7 +56,11 @@ struct GAMEOPTIONS {
     int nSpecialRespawnTime;
     int weaponsV10x;
     bool bFriendlyFire;
+#ifdef __AMIGA__
+    unsigned char bPlayerKeys; // TODO save-game compatibility 
+#else
     PLAYERKEYSMODE bPlayerKeys;
+#endif
     char szUserMap[BMAX_PATH];
 };
 
