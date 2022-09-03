@@ -43,7 +43,6 @@ extern "C"
 #endif
 void qloadvoxel(int32_t nVoxel)
 {
-#ifndef __AMIGA__
     static int nLastVoxel = 0;
     DICTNODE *hVox = gSysRes.Lookup(nVoxel, "KVX");
     if (!hVox) {
@@ -65,7 +64,6 @@ void qloadvoxel(int32_t nVoxel)
         voxoff[nVoxel][i] = (intptr_t)pVox;
         pVox += nSize;
     }
-#endif
 }
 
 void CalcPicsiz(int a1, int a2, int a3)
@@ -91,9 +89,7 @@ int hTileFile[256];
 
 char surfType[kMaxTiles];
 signed char tileShade[kMaxTiles];
-#ifndef __AMIGA__
 short voxelIndex[kMaxTiles];
-#endif
 
 #ifndef EDUKE32
 const char *pzBaseFileName = "tiles000.art";
@@ -113,10 +109,8 @@ int tileInit(char a1, const char *a2)
     if (artLoaded)
         return 1;
     artLoadFiles(a2 ? a2 : pzBaseFileName, MAXCACHE1DSIZE);
-#ifndef __AMIGA__
     for (int i = 0; i < kMaxTiles; i++)
         voxelIndex[i] = 0;
-#endif
 
     int hFile = kopen4loadfrommod("SURFACE.DAT", 0);
     if (hFile != -1)
@@ -124,7 +118,6 @@ int tileInit(char a1, const char *a2)
         kread(hFile, surfType, sizeof(surfType));
         kclose(hFile);
     }
-#ifndef __AMIGA__
     hFile = kopen4loadfrommod("VOXEL.DAT", 0);
     if (hFile != -1)
     {
@@ -135,7 +128,6 @@ int tileInit(char a1, const char *a2)
 #endif
         kclose(hFile);
     }
-#endif
     hFile = kopen4loadfrommod("SHADE.DAT", 0);
     if (hFile != -1)
     {
@@ -223,7 +215,6 @@ void tilePreloadTile(int nTile)
         break;
     case 6:
     case 7:
-#ifndef __AMIGA__
         if (voxelIndex[nTile] < 0 || voxelIndex[nTile] >= kMaxVoxels)
         {
             voxelIndex[nTile] = -1;
@@ -235,7 +226,6 @@ void tilePreloadTile(int nTile)
         }
         else
             qloadvoxel(voxelIndex[nTile]);
-#endif
         break;
     }
     while(n--)

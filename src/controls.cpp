@@ -322,11 +322,7 @@ void ctrlGetInput(void)
     if (BUTTON(gamefunc_Show_Opponents_Weapon))
     {
         CONTROL_ClearButton(gamefunc_Show_Opponents_Weapon);
-#ifdef __AMIGA__
-        gShowWeapon = !gShowWeapon;
-#else
         gShowWeapon = (gShowWeapon+1)%3;
-#endif
     }
 
     if (BUTTON(gamefunc_Jump))

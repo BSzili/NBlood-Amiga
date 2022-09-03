@@ -2625,7 +2625,6 @@ tspritetype *viewAddEffect(int nTSprite, VIEW_EFFECT nViewEffect)
         pNSprite->xrepeat = 32;
         pNSprite->yrepeat = 32;
         pNSprite->ang = (gView->pSprite->ang + 512) & 2047; // always face viewer
-#ifndef __AMIGA__
         const int nVoxel = voxelIndex[nTile];
         if (gShowWeapon == 2 && usevoxels && gDetail >= 4 && videoGetRenderMode() != REND_POLYMER && nVoxel != -1)
         {
@@ -2640,7 +2639,6 @@ tspritetype *viewAddEffect(int nTSprite, VIEW_EFFECT nViewEffect)
             if ((pPlayer->curWeapon == kWeaponLifeLeech) || (pPlayer->curWeapon == kWeaponVoodoo))  // make lifeleech/voodoo doll always face viewer like sprite
                 pNSprite->ang = (gView->pSprite->ang + 1024) & 2047;
         }
-#endif
         break;
     }
     }
@@ -2726,13 +2724,15 @@ void viewProcessSprites(int32_t cX, int32_t cY, int32_t cZ, int32_t cA, int32_t 
                 break;
             case 1:
             {
-#ifndef __AMIGA__
+#ifdef __AMIGA__
+                if (usevoxels && gDetail >= 4 && tiletovox[pTSprite->picnum] != -1)
+#else
                 if (tilehasmodelorvoxel(pTSprite->picnum, pTSprite->pal) && !(spriteext[nSprite].flags&SPREXT_NOTMD))
+#endif
                 {
                     pTSprite->cstat &= ~4;
                     break;
                 }
-#endif
                 int dX = cX - pTSprite->x;
                 int dY = cY - pTSprite->y;
                 RotateVector(&dX, &dY, 128-pTSprite->ang);
@@ -2750,13 +2750,15 @@ void viewProcessSprites(int32_t cX, int32_t cY, int32_t cZ, int32_t cA, int32_t 
             }
             case 2:
             {
-#ifndef __AMIGA__
+#ifdef __AMIGA__
+                if (usevoxels && gDetail >= 4 && tiletovox[pTSprite->picnum] != -1)
+#else
                 if (tilehasmodelorvoxel(pTSprite->picnum, pTSprite->pal) && !(spriteext[nSprite].flags&SPREXT_NOTMD))
+#endif
                 {
                     pTSprite->cstat &= ~4;
                     break;
                 }
-#endif
                 int dX = cX - pTSprite->x;
                 int dY = cY - pTSprite->y;
                 RotateVector(&dX, &dY, 128-pTSprite->ang);
@@ -2779,7 +2781,6 @@ void viewProcessSprites(int32_t cX, int32_t cY, int32_t cZ, int32_t cA, int32_t 
                 }
                 break;
             }
-#ifndef __AMIGA__
             case 6:
             case 7:
             {
@@ -2788,7 +2789,11 @@ void viewProcessSprites(int32_t cX, int32_t cY, int32_t cZ, int32_t cA, int32_t 
                     break;
 #endif
                 // Can be overridden by def script
+#ifdef __AMIGA__
+                if (usevoxels && gDetail >= 4 && tiletovox[pTSprite->picnum] == -1 && voxelIndex[pTSprite->picnum] != -1)
+#else
                 if (usevoxels && gDetail >= 4 && videoGetRenderMode() != REND_POLYMER && tiletovox[pTSprite->picnum] == -1 && voxelIndex[pTSprite->picnum] != -1 && !(spriteext[nSprite].flags&SPREXT_NOTMD))
+#endif
                 {
                     if ((pTSprite->flags&kHitagRespawn) == 0)
                     {
@@ -2815,7 +2820,6 @@ void viewProcessSprites(int32_t cX, int32_t cY, int32_t cZ, int32_t cA, int32_t 
                 }
                 break;
             }
-#endif
         }
         while (nAnim > 0)
         {
@@ -2827,8 +2831,11 @@ void viewProcessSprites(int32_t cX, int32_t cY, int32_t cZ, int32_t cA, int32_t 
             nAnim--;
         }
 
-#ifndef __AMIGA__
+#ifdef __AMIGA__
+        if ((pTSprite->cstat&48) != 48 && usevoxels && gDetail >= 4)
+#else
         if ((pTSprite->cstat&48) != 48 && usevoxels && videoGetRenderMode() != REND_POLYMER && !(spriteext[nSprite].flags&SPREXT_NOTMD))
+#endif
         {
             int const nRootTile = pTSprite->picnum;
             int nAnimTile = pTSprite->picnum + animateoffs_replace(pTSprite->picnum, 32768+pTSprite->owner);
@@ -2848,7 +2855,6 @@ void viewProcessSprites(int32_t cX, int32_t cY, int32_t cZ, int32_t cA, int32_t 
                 pTSprite->ang = (pTSprite->ang+((int)totalclock<<3))&2047;
 #endif
         }
-#endif
 
 #ifdef USE_OPENGL
         if ((pTSprite->cstat&48) != 48 && usemodels && !(spriteext[nSprite].flags&SPREXT_NOTMD))

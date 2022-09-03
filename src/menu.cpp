@@ -165,12 +165,8 @@ const char *zDiffStrings[] =
 
 const char *pzShowWeaponStrings[] = {
     "OFF",
-#ifdef __AMIGA__
-    "ON"
-#else
     "SPRITE",
     "VOXEL"
-#endif
 };
 
 const char *zPlayerKeysStrings[] = {
