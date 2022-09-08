@@ -584,14 +584,23 @@ static inline int tilehasmodelorvoxel(int const tilenume, int pal)
     (videoGetRenderMode() <= REND_POLYMOST && usevoxels && tiletovox[tilenume] != -1);
 }
 
-/*#define CACHE1D_PERMANENT 255
+#define CACHE1D_PERMANENT 255
 static inline void tileSetSize(int32_t picnum, int16_t dasizx, int16_t dasizy)
 {
+	int j, dasiz;
+
     tilesizx[picnum] = dasizx;
     tilesizy[picnum] = dasizy;
+	picanm[picnum] = 0;
 
-    tileUpdatePicSiz(picnum);
-}*/
+    //tileUpdatePicSiz(picnum);
+
+	extern int pow2long[32];
+	j = 15; while ((j > 1) && (pow2long[j] > dasizx)) j--;
+	picsiz[picnum] = ((unsigned char)j);
+	j = 15; while ((j > 1) && (pow2long[j] > dasizy)) j--;
+	picsiz[picnum] += ((unsigned char)(j<<4));
+}
 
 #ifdef __AMIGA__
 static inline size_t strnlen(const char * s, size_t len) {

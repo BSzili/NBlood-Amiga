@@ -25,6 +25,9 @@ AUDIOLIBROOT ?= jfaudiolib
 # ENet source path
 ENETROOT ?= enet
 
+# libsmackerdec source path
+SMACKERROOT ?= libsmacker
+
 # Engine options
 #  USE_POLYMOST   - enables Polymost renderer
 #  USE_OPENGL     - enables OpenGL support in Polymost
@@ -67,8 +70,8 @@ CXX?=g++
 NASM?=nasm
 RC?=windres
 OURCFLAGS=$(debug) -W -Wall -Wno-write-strings -Wno-char-subscripts -Wno-unused \
-	-fno-strict-aliasing  -funsigned-char -DNO_GCC_BUILTINS -DENGINE_19960925 -DASS_REVERSESTEREO -DSMACKER_DISABLE \
-	 -I$(EINC) -I$(MACTROOT) -I$(AUDIOLIBROOT)/include -I$(ENETROOT)/include
+	-fno-strict-aliasing  -funsigned-char -DNO_GCC_BUILTINS -DENGINE_19960925 -DASS_REVERSESTEREO \
+	 -I$(EINC) -I$(MACTROOT) -I$(AUDIOLIBROOT)/include -I$(ENETROOT)/include -I$(SMACKERROOT)
 
 OURCXXFLAGS=-fno-exceptions -fno-rtti -Wno-narrowing -I$(INC)
 
@@ -92,6 +95,8 @@ ENETOBJ=$(ENETROOT)/callbacks.o \
 	$(ENETROOT)/protocol.o \
 	$(ENETROOT)/unix.o \
 	$(ENETROOT)/win32.o
+
+SMACKEROBJ=$(SMACKERROOT)/smacker.o
 
 GAMEOBJS=$(SRC)/actor.o \
 	$(SRC)/ai.o \
@@ -165,16 +170,9 @@ GAMEOBJS=$(SRC)/actor.o \
 	$(SRC)/tile.o \
 	$(SRC)/view.o \
 	$(SRC)/screen.o \
+	$(SMACKEROBJ) \
 	$(ENETOBJ) \
 	$(JMACTOBJ)
-
-# SMACKER_DISABLE
-#GAMEOBJS+= \
-#	$(SRC)/BitReader.o \
-#	$(SRC)/FileStream.o \
-#	$(SRC)/HuffmanVLC.o \
-#	$(SRC)/LogError.o \
-#	$(SRC)/SmackerDecoder.o \
 
 # NOONE_EXTENSIONS
 #GAMEOBJS+= \
@@ -262,6 +260,8 @@ $(SRC)/%.$o: $(SRC)/%.cpp
 $(MACTROOT)/%.$o: $(MACTROOT)/%.c
 	$(CC) $(CFLAGS) $(OURCFLAGS) -c $< -o $@
 $(ENETROOT)/%.$o: $(ENETROOT)/%.c
+	$(CC) $(CFLAGS) $(OURCFLAGS) -c $< -o $@
+$(SMACKERROOT)/%.$o: $(SMACKERROOT)/%.c
 	$(CC) $(CFLAGS) $(OURCFLAGS) -c $< -o $@
 
 $(RSRC)/%.$(res): $(RSRC)/%.rc

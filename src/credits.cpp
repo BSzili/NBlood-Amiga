@@ -24,8 +24,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "build.h"
 #include "compat.h"
 #ifndef SMACKER_DISABLE
-#ifdef __AMIGA__
-#include "libsmacker.h"
+#ifndef EDUKE32
+#include "smacker.h"
 #else
 #include "SmackerDecoder.h"
 #endif
@@ -197,7 +197,7 @@ char credPlaySmk(const char *_pzSMK, const char *_pzWAV, int nWav)
     smkPlayer.sub_82E6C(pzSMK, pzWAV);
 #endif
 #ifdef SMACKER_DISABLE
-	return FALSE;
+    return FALSE;
 #else
     if (Bstrlen(_pzSMK) == 0)
         return false;
@@ -213,47 +213,74 @@ char credPlaySmk(const char *_pzSMK, const char *_pzWAV, int nWav)
         return FALSE;
     }
     kclose(nHandleSMK);
+#ifndef EDUKE32
+    smk hSMK = smk_open_file(pzSMK, SMK_MODE_DISK);
+    if (hSMK == NULL)
+#else
     SmackerHandle hSMK = Smacker_Open(pzSMK);
     if (!hSMK.isValid)
+#endif
     {
         Xfree(pzSMK_);
         Xfree(pzWAV_);
         return FALSE;
     }
     uint32_t nWidth, nHeight;
+#ifndef EDUKE32
+    unsigned long w, h, frame_count;
+    double usf;
+    smk_info_all(hSMK, NULL, &frame_count, &usf);
+    smk_info_video(hSMK, &w, &h, NULL);
+    int nFrameRate = 1000000.0 / usf;
+    int nFrames = frame_count;
+    nWidth = w;
+    nHeight = h;
+#else
     Smacker_GetFrameSize(hSMK, nWidth, nHeight);
     int nFrameRate = Smacker_GetFrameRate(hSMK);
     int nFrames = Smacker_GetNumFrames(hSMK);
+#endif
     if (!nWidth || !nHeight || !nFrames || !nFrameRate)
     {
+#ifndef EDUKE32
+        smk_close(hSMK);
+#else
         Smacker_Close(hSMK);
+#endif
         Xfree(pzSMK_);
         Xfree(pzWAV_);
         return FALSE;
     }
 #ifndef EDUKE32
-    allocatepermanenttile(kSMKTile, nHeight, nWidth);
-    uint8_t *pFrame = (uint8_t*)waloff[kSMKTile];
+    const unsigned char *pFrame = smk_get_video(hSMK);
 #else
     uint8_t *pFrame = (uint8_t*)Xcalloc(1,nWidth*nHeight);
 #endif
 
     if (!pFrame)
     {
+#ifndef EDUKE32
+        smk_close(hSMK);
+#else
         Smacker_Close(hSMK);
+#endif
         Xfree(pzSMK_);
         Xfree(pzWAV_);
         return FALSE;
     }
 
-#ifdef EDUKE32
     walock[kSMKTile] = CACHE1D_PERMANENT;
     waloff[kSMKTile] = (intptr_t)pFrame;
     tileSetSize(kSMKTile, nHeight, nWidth);
-#endif
 
+#ifndef EDUKE32
+    smk_enable_video(hSMK, 1);
+    smk_first(hSMK);
+    const unsigned char *palette = smk_get_palette(hSMK);
+#else
     uint8_t palette[768];
     Smacker_GetPalette(hSMK, palette);
+#endif
     paletteSetColorTable(kSMKPal, palette);
     videoSetPalette(gBrightness>>2, kSMKPal, 8+2);
 
@@ -297,13 +324,10 @@ char credPlaySmk(const char *_pzSMK, const char *_pzWAV, int nWav)
     ClockTicks nStartTime = totalclock;
 
     ctrlClearAllInput();
-#ifdef __AMIGA__0
+#ifdef __AMIGA__
     videoClearScreen(0);
-    // TODO this might cause a 1 frame delay?
-	Smacker_GetNextFrame(hSMK);
-	Smacker_GetPalette(hSMK, palette);
-	paletteSetColorTable(kSMKPal, palette);
-	videoSetPalette(gBrightness >> 2, kSMKPal, 0);
+    paletteSetColorTable(kSMKPal, palette);
+    videoSetPalette(gBrightness >> 2, kSMKPal, 0);
 #endif
 
     int nFrame = 0;
@@ -311,17 +335,17 @@ char credPlaySmk(const char *_pzSMK, const char *_pzWAV, int nWav)
     {
         gameHandleEvents();
 #ifdef __AMIGA__
-        int targetFrame = scale((int)(totalclock-nStartTime), nFrameRate, kTicRate);
-		//buildprintf("targetFrame %d nFrame %d\n", targetFrame, nFrame);
-		// frame skipping
-		//buildprintf("%s frameskip %d\n", __FUNCTION__, targetFrame - nFrame - 1);
-		while (targetFrame - nFrame > 1)
-		{
-			//gameHandleEvents();
-			nFrame++;
-			Smacker_GetNextFrame(hSMK);
-			//buildprintf("targetFrame %d nFrame %d\n", targetFrame, nFrame);
-		}
+        int targetFrame = (int)(totalclock-nStartTime) * nFrameRate / kTicRate;
+        //buildprintf("targetFrame %d nFrame %d\n", targetFrame, nFrame);
+        // frame skipping
+        //buildprintf("%s frameskip %d\n", __FUNCTION__, targetFrame - nFrame - 1);
+        while (targetFrame > nFrame)
+        {
+            //gameHandleEvents();
+            nFrame++;
+            smk_next(hSMK);
+            //buildprintf("targetFrame %d nFrame %d\n", targetFrame, nFrame);
+        }
         if (targetFrame < nFrame)
 #else
         if (scale((int)(totalclock-nStartTime), nFrameRate, kTicRate) < nFrame)
@@ -331,14 +355,18 @@ char credPlaySmk(const char *_pzSMK, const char *_pzWAV, int nWav)
         if (KB_KeyPressed(sc_Escape) || (nFrame > nFrameRate && ctrlCheckAllInput()))
             break;
 
-#ifndef __AMIGA__0
+#ifndef __AMIGA__
         videoClearScreen(0);
+#ifdef EDUKE32
         Smacker_GetPalette(hSMK, palette);
+#endif
         paletteSetColorTable(kSMKPal, palette);
         videoSetPalette(gBrightness >> 2, kSMKPal, 0);
 #endif
         tileInvalidate(kSMKTile, 0, 1 << 4);  // JBF 20031228
+#ifdef EDUKE32
         Smacker_GetFrame(hSMK, pFrame);
+#endif
 
         rotatesprite_fs(160<<16, 100<<16, nScale, 512, kSMKTile, 0, 0, nStat);
 
@@ -346,20 +374,26 @@ char credPlaySmk(const char *_pzSMK, const char *_pzWAV, int nWav)
 
         ctrlClearAllInput();
         nFrame++;
+#ifndef EDUKE32
+        smk_next(hSMK);
+#else
         Smacker_GetNextFrame(hSMK);
+#endif
     } while(nFrame < nFrames);
 
+#ifndef EDUKE32
+    smk_close(hSMK);
+#else
     Smacker_Close(hSMK);
+#endif
     ctrlClearAllInput();
     FX_StopAllSounds();
     renderSetAspect(viewingrange, oyxaspect);
     videoSetPalette(gBrightness >> 2, 0, 8+2);
-#ifndef EDUKE32
-    walock[kSMKTile] = 1;
-#else
     walock[kSMKTile] = 0;
     waloff[kSMKTile] = 0;
     tileSetSize(kSMKTile, 0, 0);
+#ifdef EDUKE32
     Xfree(pFrame);
 #endif
     Xfree(pzSMK_);
