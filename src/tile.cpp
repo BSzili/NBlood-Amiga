@@ -50,9 +50,15 @@ void qloadvoxel(int32_t nVoxel)
         return;
     }
 
+#ifdef __AMIGA__
+    extern char cachedebug;
+    if (cachedebug)
+        buildprintf("Voxel %d\n", nVoxel);
+#else
     if (!hVox->lockCount)
         voxoff[nLastVoxel][0] = 0;
     nLastVoxel = nVoxel;
+#endif
     char *pVox = (char*)gSysRes.Lock(hVox);
     for (int i = 0; i < MAXVOXMIPS; i++)
     {
@@ -118,6 +124,9 @@ int tileInit(char a1, const char *a2)
         kread(hFile, surfType, sizeof(surfType));
         kclose(hFile);
     }
+#ifndef EDUKE32
+    memset(voxelIndex, -1, sizeof(voxelIndex));
+#endif
     hFile = kopen4loadfrommod("VOXEL.DAT", 0);
     if (hFile != -1)
     {
@@ -134,13 +143,16 @@ int tileInit(char a1, const char *a2)
         kread(hFile, tileShade, sizeof(tileShade));
         kclose(hFile);
     }
-#ifdef EDUKE32
     for (int i = 0; i < kMaxTiles; i++)
     {
         if (voxelIndex[i] >= 0 && voxelIndex[i] < kMaxVoxels)
+#ifndef EDUKE32
+            if (voxelIndex[i] >= nextvoxid)
+                nextvoxid = voxelIndex[i] + 1;
+#else
             SetBitString((char*)voxreserve, voxelIndex[i]);
-    }
 #endif
+    }
 
     artLoaded = 1;
 

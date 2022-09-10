@@ -2725,7 +2725,7 @@ void viewProcessSprites(int32_t cX, int32_t cY, int32_t cZ, int32_t cA, int32_t 
             case 1:
             {
 #ifdef __AMIGA__
-                if (usevoxels && gDetail >= 4 && tiletovox[pTSprite->picnum] != -1)
+                if (usevoxels /*&& gDetail >= 4*/ && tiletovox[pTSprite->picnum] != -1)
 #else
                 if (tilehasmodelorvoxel(pTSprite->picnum, pTSprite->pal) && !(spriteext[nSprite].flags&SPREXT_NOTMD))
 #endif
@@ -2751,7 +2751,7 @@ void viewProcessSprites(int32_t cX, int32_t cY, int32_t cZ, int32_t cA, int32_t 
             case 2:
             {
 #ifdef __AMIGA__
-                if (usevoxels && gDetail >= 4 && tiletovox[pTSprite->picnum] != -1)
+                if (usevoxels /*&& gDetail >= 4*/ && tiletovox[pTSprite->picnum] != -1)
 #else
                 if (tilehasmodelorvoxel(pTSprite->picnum, pTSprite->pal) && !(spriteext[nSprite].flags&SPREXT_NOTMD))
 #endif
@@ -2832,7 +2832,7 @@ void viewProcessSprites(int32_t cX, int32_t cY, int32_t cZ, int32_t cA, int32_t 
         }
 
 #ifdef __AMIGA__
-        if ((pTSprite->cstat&48) != 48 && usevoxels && gDetail >= 4)
+        if ((pTSprite->cstat&48) != 48 && usevoxels /*&& gDetail >= 4*/)
 #else
         if ((pTSprite->cstat&48) != 48 && usevoxels && videoGetRenderMode() != REND_POLYMER && !(spriteext[nSprite].flags&SPREXT_NOTMD))
 #endif

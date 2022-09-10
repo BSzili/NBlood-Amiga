@@ -624,4 +624,6 @@ static inline void wsrand(int seed)
 	wrandomseed = seed;
 }
 
+extern int nextvoxid;
+
 #endif

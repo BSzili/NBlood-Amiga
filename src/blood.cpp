@@ -589,6 +589,28 @@ void PreloadTiles(void)
             case kStatThing:
                 PrecacheThing(pSprite);
                 break;
+            case kStatTraps:
+                if (pSprite->type == kTrapSawCircular)
+                {
+                    tilePrecacheTile(772); // bloody variant
+                    tilePrecacheTile(775); // kViewEffectSpear
+                }
+                tilePrecacheTile(pSprite->picnum);
+                break;
+            case kStatDecoration:
+                switch (pSprite->type)
+                {
+                    case kDecorationCandle:
+                        tilePrecacheTile(626); // kViewEffectPhase
+                        break;
+                    case kDecorationTorch:
+                        tilePrecacheTile(2101); // kViewEffectTorchHigh
+                        tilePrecacheTile(754); // kViewEffectSmokeHigh
+                        tilePrecacheTile(pSprite->picnum + 1);
+                        break;
+                }
+                tilePrecacheTile(pSprite->picnum);
+                break;
             default:
                 tilePrecacheTile(pSprite->picnum);
                 break;
@@ -717,6 +739,8 @@ void PreloadTiles(void)
     }
     // flare flame
     tilePrecacheTile(2123);
+    tilePrecacheTile(2427); // kViewEffectFlareHalo
+    tilePrecacheTile(624); // kViewEffectCeilGlow, kViewEffectFloorGlow
     // tesla projectile
     tilePrecacheTile(2135);
     // shotgun shell
@@ -728,6 +752,8 @@ void PreloadTiles(void)
     tilePrecacheTile(754);
     // TODO some fire, maybe a SEQ?
     // 2100-2114
+    // TODO kViewEffectShoot 2605-2609, multiplayer
+    // TODO kViewEffectReflectiveBall 2089, multiplayer
 
     // punch
     PrecacheSound(357);
@@ -924,6 +950,19 @@ void PreloadCache(void)
     {
         if (TestBitString(gotpic, i))
         {
+#ifndef EDUKE32
+            switch ((picanm[i]>>28)&7)
+            {
+            case 6:
+            case 7:
+                if (usevoxels && gDetail >= 4 && tiletovox[i] == -1 && voxelIndex[i] != -1 && voxoff[voxelIndex[i]][0] == 0)
+                {
+                    //buildprintf("%s voxel %2d for tile %4d\n", __FUNCTION__, voxelIndex[i], i);
+                    qloadvoxel(voxelIndex[i]);
+                }
+                break;
+            }
+#endif
             if (waloff[i] == 0)
                 tileLoad((int16_t)i);
 #ifndef EDUKE32
@@ -2991,10 +3030,8 @@ static int parsedefinitions_game(scriptfile *pScript, int firstPass)
 
                 if (havesurface)
                     surfType[tile] = surface;
-#ifndef __AMIGA__
                 if (havevox)
                     voxelIndex[tile] = vox;
-#endif
                 if (haveshade)
                     tileShade[tile] = shade;
                 if (haveview)
