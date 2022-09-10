@@ -301,6 +301,16 @@ DICTNODE **Resource::Probe(const char *fname, const char *type)
 
 DICTNODE **Resource::Probe(unsigned int id, const char *type)
 {
+#ifdef __AMIGA__
+    unsigned int itype = *(unsigned int *)type;
+    unsigned int hash = (type[0] + type[1]*119 + type[2]*119*2 + id) & (buffSize - 1); // 4
+    //buildprintf("%s(%d,%s) itype %x strlen %u mask %u hash %u\n", __FUNCTION__, id, type, itype, strlen(type), (buffSize - 1), hash);
+    dassert(strlen(type) == 3);
+    if (lastId == id && lastType == itype)
+    {
+        return lastNode;
+    }
+#else
     struct {
         int id;
         char type[BMAX_PATH];
@@ -311,18 +321,34 @@ DICTNODE **Resource::Probe(unsigned int id, const char *type)
     name.id = id;
     dassert(dict != NULL);
     unsigned int hash = Bcrc32(&name, strlen(name.type)+sizeof(name.id), 0) & (buffSize - 1);
+#endif
     unsigned int i = hash;
     do
     {
         if (!indexId[i])
         {
+#ifdef __AMIGA__
+            lastId = id;
+            lastNode = &indexId[i];
+#endif
             return &indexId[i];
         }
+#ifdef __AMIGA__
+        //buildprintf("%s trying %s.%s\n", __FUNCTION__, indexId[i]->name, indexId[i]->type);
+        if (*(unsigned int *)indexId[i]->type == itype && indexId[i]->id == id)
+        {
+            lastId = id;
+            lastType = itype;
+            lastNode = &indexId[i];
+            return lastNode;
+        }
+#else
         if (!strcmp((*indexId[i]).type, type)
             && (*indexId[i]).id == id)
         {
             return &indexId[i];
         }
+#endif
         if (++i == buffSize)
         {
             i = 0;
@@ -361,25 +387,9 @@ void Resource::Reindex(void)
         }
     }
 #ifdef __AMIGA__
-	// TODO don't reallocate just clear
-	if (lookupEntries)
-	{
-		Free(lookupEntries);
-	}
-	lookupEntries = (LookupCache*)Alloc(MAXLOOKUPCACHE * sizeof(LookupCache));
-	memset(lookupEntries, 0xFF, MAXLOOKUPCACHE * sizeof(LookupCache));
-	if (lookupNodes)
-	{
-		Free(lookupNodes);
-	}
-	lookupNodes = (DICTNODE**)Alloc(MAXLOOKUPCACHE * sizeof(DICTNODE*));
-	memset(lookupNodes, 0, MAXLOOKUPCACHE * sizeof(DICTNODE*));
-	if (lookupLastUsed)
-	{
-		Free(lookupLastUsed);
-	}
-	lookupLastUsed = (ClockTicks*)Alloc(MAXLOOKUPCACHE * sizeof(ClockTicks));
-	memset(lookupLastUsed, 0, MAXLOOKUPCACHE * sizeof(ClockTicks));
+    lastId = -1;
+    lastType = -1;
+    lastNode = NULL;
 #endif
 }
 
@@ -682,59 +692,6 @@ void Resource::Free(void *p)
 #endif
 }
 
-#ifdef __AMIGA__
-DICTNODE *Resource::LookupNodeInCache(unsigned int id, const char *type)
-{
-	if (*(unsigned int *)type == 0x53465800) return NULL; // don't cache SFX
-	for (unsigned int i = 0; i < MAXLOOKUPCACHE; i++)
-	{
-		const LookupCache *cache = &lookupEntries[i];
-		if (cache->id == id && cache->type == *(unsigned int *)type)
-		{
-			lookupLastUsed[i] = totalclock;
-			return lookupNodes[i];
-		}
-	}
-	return NULL;
-}
-
-void Resource::CacheLookupNode(DICTNODE *node, unsigned int id, const char *type)
-{
-	if (*(unsigned int *)type == 0x53465800) return; // don't cache SFX
-	int i = 0;
-	ClockTicks nClock = totalclock;
-	ClockTicks maxClockDiff = 0;
-	for (unsigned int j = 0; j < MAXLOOKUPCACHE; j++)
-	{
-		if (lookupNodes[j] == NULL)
-		{
-			i = j; // empty slot
-			break;
-		}
-		ClockTicks clockDiff = nClock - lookupLastUsed[j];
-		if (clockDiff < 0)
-		{
-			i = j; // timer wraparound
-			break;
-		}
-		if (clockDiff > maxClockDiff)
-		{
-			maxClockDiff = clockDiff;
-			i = j;
-		}
-	}
-	extern char cachedebug;
-	if (cachedebug)
-		buildprintf("cached node id %d type '%s' at index %d\n", id, type, i);
-
-	LookupCache *cache = &lookupEntries[i];
-	cache->id = id;
-	cache->type = *(unsigned int *)type;
-	lookupLastUsed[i] = totalclock;
-	lookupNodes[i] = node;
-}
-#endif
-
 DICTNODE *Resource::Lookup(const char *name, const char *type)
 {
 #ifdef __AMIGA__
@@ -757,21 +714,7 @@ DICTNODE *Resource::Lookup(unsigned int id, const char *type)
 {
 #ifdef __AMIGA__
     //buildprintf("RFF Lookup %d %s\n",id,type);
-	//if (strcmp(type, type)) ThrowError("type '%s' type '%s'", type, type);
-	DICTNODE *node = LookupNodeInCache(id, type);
-	if (node == NULL)
-	{
-		node = *Probe(id, type);
-		if (node)
-			CacheLookupNode(node, id, type);
-	}
-	/*else
-	{
-		DICTNODE *node2 = *Probe(id, type);
-		if ((node || node2) && node != node2)
-			ThrowError("id %d type %s mismatch node %p id %d name '%s' type '%s' node2 %p id %d name '%s' type '%s'", id, type, node, node->id, node->name, node->type, node2, node2->id, node2->name, node2->type);
-	}*/
-	return node;
+    return *Probe(id, type);
 #else
     char type2[BMAX_PATH];
     dassert(type != NULL);

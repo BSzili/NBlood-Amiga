@@ -82,15 +82,6 @@ struct DICTNODE : CACHENODE
     unsigned int id;
 };
 
-#ifdef __AMIGA__
-struct LookupCache
-{
-    unsigned int id;
-    unsigned int type;
-};
-#define MAXLOOKUPCACHE 32
-#endif
-
 class Resource
 {
 public:
@@ -123,10 +114,6 @@ public:
     void PrecacheSounds(void);
     void PurgeCache(void);
     void RemoveNode(DICTNODE* pNode);
-#ifdef __AMIGA__
-    DICTNODE *LookupNodeInCache(unsigned int id, const char *type);
-    void CacheLookupNode(DICTNODE *node, unsigned int id, const char *type);
-#endif
 
     DICTNODE *dict;
     DICTNODE **indexName;
@@ -136,9 +123,9 @@ public:
     int handle;
     bool crypt;
 #ifdef __AMIGA__
-    LookupCache *lookupEntries;
-    DICTNODE **lookupNodes;
-    ClockTicks *lookupLastUsed;
+    unsigned int lastId;
+    unsigned int lastType;
+    DICTNODE **lastNode;
 #endif
 
 #if USE_QHEAP
