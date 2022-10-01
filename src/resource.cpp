@@ -329,6 +329,7 @@ DICTNODE **Resource::Probe(unsigned int id, const char *type)
         {
 #ifdef __AMIGA__
             lastId = id;
+            lastType = itype;
             lastNode = &indexId[i];
 #endif
             return &indexId[i];
