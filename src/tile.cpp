@@ -51,15 +51,23 @@ void qloadvoxel(int32_t nVoxel)
     }
 
 #ifdef __AMIGA__
+    if (voxoff[nVoxel][0])
+        return; // already loaded
+
     extern char cachedebug;
     if (cachedebug)
         buildprintf("Voxel %d\n", nVoxel);
+
+    voxlock[nVoxel][0] = 199; // don't lock it
+    allocache((void **)&voxoff[nVoxel][0],hVox->size,&voxlock[nVoxel][0]);
+    char *pVox = (char*)voxoff[nVoxel][0];
+    gSysRes.Read(hVox, pVox);
 #else
     if (!hVox->lockCount)
         voxoff[nLastVoxel][0] = 0;
     nLastVoxel = nVoxel;
-#endif
     char *pVox = (char*)gSysRes.Lock(hVox);
+#endif
     for (int i = 0; i < MAXVOXMIPS; i++)
     {
         int nSize = *((int*)pVox);

@@ -566,6 +566,7 @@ int getclosestcol(int r, int g, int b);
 #define MAXVOXMIPS 5
 #endif
 extern intptr_t voxoff[MAXVOXELS][MAXVOXMIPS];
+extern unsigned char voxlock[MAXVOXELS][MAXVOXMIPS];
 
 #define maxspritesonscreen MAXSPRITESONSCREEN
 //int animateoffs(short tilenum, short fakevar);
