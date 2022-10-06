@@ -2724,6 +2724,7 @@ void viewProcessSprites(int32_t cX, int32_t cY, int32_t cZ, int32_t cA, int32_t 
                 break;
             case 1:
             {
+#ifndef __AMIGA__
 #ifdef __AMIGA__
                 if (usevoxels /*&& gDetail >= 4*/ && tiletovox[pTSprite->picnum] != -1)
 #else
@@ -2733,6 +2734,7 @@ void viewProcessSprites(int32_t cX, int32_t cY, int32_t cZ, int32_t cA, int32_t 
                     pTSprite->cstat &= ~4;
                     break;
                 }
+#endif
                 int dX = cX - pTSprite->x;
                 int dY = cY - pTSprite->y;
                 RotateVector(&dX, &dY, 128-pTSprite->ang);
@@ -2750,6 +2752,7 @@ void viewProcessSprites(int32_t cX, int32_t cY, int32_t cZ, int32_t cA, int32_t 
             }
             case 2:
             {
+#ifndef __AMIGA__
 #ifdef __AMIGA__
                 if (usevoxels /*&& gDetail >= 4*/ && tiletovox[pTSprite->picnum] != -1)
 #else
@@ -2759,6 +2762,7 @@ void viewProcessSprites(int32_t cX, int32_t cY, int32_t cZ, int32_t cA, int32_t 
                     pTSprite->cstat &= ~4;
                     break;
                 }
+#endif
                 int dX = cX - pTSprite->x;
                 int dY = cY - pTSprite->y;
                 RotateVector(&dX, &dY, 128-pTSprite->ang);
@@ -2790,7 +2794,7 @@ void viewProcessSprites(int32_t cX, int32_t cY, int32_t cZ, int32_t cA, int32_t 
 #endif
                 // Can be overridden by def script
 #ifdef __AMIGA__
-                if (usevoxels && gDetail >= 4 && tiletovox[pTSprite->picnum] == -1 && voxelIndex[pTSprite->picnum] != -1)
+                if (usevoxels && gDetail >= 4 && voxelIndex[pTSprite->picnum] != -1)
 #else
                 if (usevoxels && gDetail >= 4 && videoGetRenderMode() != REND_POLYMER && tiletovox[pTSprite->picnum] == -1 && voxelIndex[pTSprite->picnum] != -1 && !(spriteext[nSprite].flags&SPREXT_NOTMD))
 #endif
@@ -2831,6 +2835,7 @@ void viewProcessSprites(int32_t cX, int32_t cY, int32_t cZ, int32_t cA, int32_t 
             nAnim--;
         }
 
+#ifndef __AMIGA__
 #ifdef __AMIGA__
         if ((pTSprite->cstat&48) != 48 && usevoxels /*&& gDetail >= 4*/)
 #else
@@ -2855,6 +2860,7 @@ void viewProcessSprites(int32_t cX, int32_t cY, int32_t cZ, int32_t cA, int32_t 
                 pTSprite->ang = (pTSprite->ang+((int)totalclock<<3))&2047;
 #endif
         }
+#endif
 
 #ifdef USE_OPENGL
         if ((pTSprite->cstat&48) != 48 && usemodels && !(spriteext[nSprite].flags&SPREXT_NOTMD))

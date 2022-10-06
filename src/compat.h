@@ -576,14 +576,15 @@ extern unsigned char voxlock[MAXVOXELS][MAXVOXMIPS];
 #define renderSetTarget setviewtotile
 #define renderRestoreTarget setviewback
 
-static inline int tilehasmodelorvoxel(int const tilenume, int pal)
+/*static inline int tilehasmodelorvoxel(int const tilenume, int pal)
 {
     return
 #ifdef USE_OPENGL
     (videoGetRenderMode() >= REND_POLYMOST && mdinited && usemodels && tile2model[Ptile2tile(tilenume, pal)].modelid != -1) ||
 #endif
     (videoGetRenderMode() <= REND_POLYMOST && usevoxels && tiletovox[tilenume] != -1);
-}
+}*/
+#define usevoxels (1)
 
 #define CACHE1D_PERMANENT 255
 static inline void tileSetSize(int32_t picnum, int16_t dasizx, int16_t dasizy)

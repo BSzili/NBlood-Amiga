@@ -955,7 +955,7 @@ void PreloadCache(void)
             {
             case 6:
             case 7:
-                if (usevoxels && gDetail >= 4 && tiletovox[i] == -1 && voxelIndex[i] != -1 && voxoff[voxelIndex[i]][0] == 0)
+                if (usevoxels && gDetail >= 4 /*&& tiletovox[i] == -1*/ && voxelIndex[i] != -1 && voxoff[voxelIndex[i]][0] == 0)
                 {
                     //buildprintf("%s voxel %2d for tile %4d\n", __FUNCTION__, voxelIndex[i], i);
                     qloadvoxel(voxelIndex[i]);
