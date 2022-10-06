@@ -352,6 +352,11 @@ void MyLoadSave::Load(void)
     Read(show2dsprite, sizeof(show2dsprite));
     Read(&automapping, sizeof(automapping));
     Read(gotpic, sizeof(gotpic));
+#ifdef __AMIGA__
+	// TODO save-game compatibility 
+	char padding[1152-sizeof(gotpic)];
+	Read(padding, sizeof(padding));
+#endif
     Read(gotsector, sizeof(gotsector));
     Read(&gFrameClock, sizeof(gFrameClock));
     Read(&gFrameTicks, sizeof(gFrameTicks));
@@ -483,6 +488,11 @@ void MyLoadSave::Save(void)
     Write(show2dsprite, sizeof(show2dsprite));
     Write(&automapping, sizeof(automapping));
     Write(gotpic, sizeof(gotpic));
+#ifdef __AMIGA__
+	// TODO save-game compatibility 
+	char padding[1152-sizeof(gotpic)];
+	Write(padding, sizeof(padding));
+#endif
     Write(gotsector, sizeof(gotsector));
     Write(&gFrameClock, sizeof(gFrameClock));
     Write(&gFrameTicks, sizeof(gFrameTicks));
