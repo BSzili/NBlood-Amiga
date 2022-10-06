@@ -223,34 +223,15 @@ void QuitGame(void)
 }
 
 #ifndef EDUKE32
+#define kMaxCacheSounds 16384
+static int nSoundCount;
+static char gotsound[(kMaxCacheSounds+7)>>3];
+
 static void PrecacheSound(int nSFX)
 {
-    if (!nSFX || !SoundToggle) return;
-#ifdef __AMIGA__
-    bool demoWasPlayed = gDemo.at1; 
-    if (!demoWasPlayed && gMusicPrevLoadedEpisode == gGameOptions.nEpisode && gMusicPrevLoadedLevel == gGameOptions.nLevel)
-        return;
-
-    gameHandleEvents();
-    if (KB_LastScan == sc_Space) return;
-#endif
-
-#ifdef __AMIGA__
-    DICTNODE *pSFXNode = sndLookupSfxCached(nSFX);
-#else
-    DICTNODE *pSFXNode = gSoundRes.Lookup(nSFX, "SFX");
-#endif
-    if (pSFXNode /*&& !pSFXNode->ptr*/) {
-        SFX *pSFX = (SFX*)(pSFXNode->ptr ? pSFXNode->ptr : gSoundRes.Load(pSFXNode));
-#ifdef __AMIGA__
-        DICTNODE *pRAWNode = sndLookupRawCached(nSFX, pSFX->rawName);
-#else
-        DICTNODE *pRAWNode = gSoundRes.Lookup(pSFX->rawName, "RAW");
-#endif
-        if (pRAWNode && !pRAWNode->ptr) {
-            gSoundRes.Load(pRAWNode);
-        }
-    }
+    if (!nSFX || !SoundToggle || nSFX >= kMaxCacheSounds) return;
+    SetBitString(gotsound, nSFX);
+    nSoundCount++;
 }
 #endif
 
@@ -911,7 +892,7 @@ static void caches(void)
         }
     }
 
-    buildprintf("%s free cache %dK largest %dK\n", __FUNCTION__, k/1024, j/1024);
+    buildprintf("%s free cache %dK largest %dK objects %d\n", __FUNCTION__, k/1024, j/1024, cacnum);
 }
 #endif
 
@@ -922,11 +903,16 @@ void PreloadCache(void)
         return;
 
 #ifndef EDUKE32
+    int nVoxCount = 0;
+    char gotvox[(kMaxVoxels+7)>>3];
+    memset(gotvox,0,sizeof(gotvox));
     cachedebug = 0;
 #endif
 #ifdef __AMIGA__
+    /*
     viewLoadingScreenUpdate("Precaching sounds...", -1);
     videoNextPage();
+    */
     // TODO purge the cache between demos?
     if (gMusicPrevLoadedEpisode != gGameOptions.nEpisode || gMusicPrevLoadedLevel != gGameOptions.nLevel)
     {
@@ -955,10 +941,14 @@ void PreloadCache(void)
             {
             case 6:
             case 7:
-                if (usevoxels && gDetail >= 4 /*&& tiletovox[i] == -1*/ && voxelIndex[i] != -1 && voxoff[voxelIndex[i]][0] == 0)
+                if (/*usevoxels &&*/ gDetail >= 4 /*&& tiletovox[i] == -1*/ && voxelIndex[i] != -1 /*&& voxoff[voxelIndex[i]][0] == 0*/)
                 {
                     //buildprintf("%s voxel %2d for tile %4d\n", __FUNCTION__, voxelIndex[i], i);
-                    qloadvoxel(voxelIndex[i]);
+                    //qloadvoxel(voxelIndex[i]);
+                    SetBitString(gotvox, voxelIndex[i]);
+                    nVoxCount++;
+                    cnt++;
+                    continue; // skip this tile
                 }
                 break;
             }
@@ -969,6 +959,7 @@ void PreloadCache(void)
             else
             {
                 //if (walock[i] < 199) walock[i] = 199;
+                cnt++;
                 continue; // only update when we loaded a tile
             }
 #endif
@@ -982,9 +973,18 @@ void PreloadCache(void)
             if ((++cnt & 7) == 0)
                 gameHandleEvents();
 
-#ifdef EDUKE32
+#ifndef EDUKE32
+            if (totalclock - clock > (kTicRate>>4))
+            {
+                int const percentComplete = min(100, (100 * cnt / nPrecacheCount));
+
+                Bsprintf(tempbuf, "Loaded %d%% (%d/%d textures)\n", percentComplete, cnt, nPrecacheCount);
+                viewLoadingScreenUpdate(tempbuf, percentComplete);
+                videoNextPage();
+                clock = totalclock;
+            }
+#else
             if (videoGetRenderMode() != REND_CLASSIC && totalclock - clock > (kTicRate>>2))
-#endif
             {
                 int const percentComplete = min(100, tabledivide32_noinline(100 * cnt, nPrecacheCount));
 
@@ -1005,10 +1005,83 @@ void PreloadCache(void)
 
                 clock = totalclock;
             }
+#endif
         }
     }
     memset(gotpic,0,sizeof(gotpic));
 #ifndef EDUKE32
+    clock = totalclock;
+    cnt = 0;
+    for (int i=0; i<kMaxVoxels && !KB_KeyPressed(sc_Space); i++)
+    {
+        if (TestBitString(gotvox, i))
+        {
+            if (voxoff[i][0] == 0)
+            {
+                qloadvoxel(i);
+            }
+            else
+            {
+                cnt++;
+                continue; // only update if we loaded something
+            }
+
+            if ((++cnt & 7) == 0)
+                gameHandleEvents();
+
+            if (totalclock - clock > (kTicRate>>4))
+            {
+                int const percentComplete = min(100, (100 * cnt / nVoxCount));
+
+                Bsprintf(tempbuf, "Loaded %d%% (%d/%d voxels)\n", percentComplete, cnt, nVoxCount);
+                viewLoadingScreenUpdate(tempbuf, percentComplete);
+                videoNextPage();
+                clock = totalclock;
+            }
+        }
+    }
+    clock = totalclock;
+    cnt = 0;
+    for (int i=0; i<kMaxCacheSounds && !KB_KeyPressed(sc_Space); i++)
+    {
+        if (TestBitString(gotsound, i))
+        {
+#ifdef __AMIGA__
+            DICTNODE *pSFXNode = sndLookupSfxCached(i);
+#else
+            DICTNODE *pSFXNode = gSoundRes.Lookup(i, "SFX");
+#endif
+            if (pSFXNode /*&& !pSFXNode->ptr*/) {
+                SFX *pSFX = (SFX*)(pSFXNode->ptr ? pSFXNode->ptr : gSoundRes.Load(pSFXNode));
+#ifdef __AMIGA__
+                DICTNODE *pRAWNode = sndLookupRawCached(i, pSFX->rawName);
+#else
+                DICTNODE *pRAWNode = gSoundRes.Lookup(pSFX->rawName, "RAW");
+#endif
+                if (pRAWNode && !pRAWNode->ptr) {
+                    gSoundRes.Load(pRAWNode);
+                } else {
+                    cnt++;
+                    continue; // only update if we loaded something
+                }
+            }
+
+            if ((++cnt & 7) == 0)
+                gameHandleEvents();
+
+            if (totalclock - clock > (kTicRate>>4))
+            {
+                int const percentComplete = min(100, (100 * cnt / nSoundCount));
+
+                Bsprintf(tempbuf, "Loaded %d%% (%d/%d sounds)\n", percentComplete, cnt, nSoundCount);
+                viewLoadingScreenUpdate(tempbuf, percentComplete);
+                videoNextPage();
+                clock = totalclock;
+            }
+        }
+    }
+    nSoundCount = 0;
+    memset(gotsound, 0, sizeof(gotsound));
     if (bCachePrintMode)
     {
         cachedebug = 1;
