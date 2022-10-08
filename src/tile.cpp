@@ -124,7 +124,11 @@ int tileInit(char a1, const char *a2)
         return 1;
     artLoadFiles(a2 ? a2 : pzBaseFileName, MAXCACHE1DSIZE);
     for (int i = 0; i < kMaxTiles; i++)
+#ifndef EDUKE32
+        voxelIndex[i] = -1;
+#else
         voxelIndex[i] = 0;
+#endif
 
     int hFile = kopen4loadfrommod("SURFACE.DAT", 0);
     if (hFile != -1)
@@ -132,9 +136,6 @@ int tileInit(char a1, const char *a2)
         kread(hFile, surfType, sizeof(surfType));
         kclose(hFile);
     }
-#ifndef EDUKE32
-    memset(voxelIndex, -1, sizeof(voxelIndex));
-#endif
     hFile = kopen4loadfrommod("VOXEL.DAT", 0);
     if (hFile != -1)
     {
