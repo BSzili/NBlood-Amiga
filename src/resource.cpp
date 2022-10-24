@@ -976,7 +976,7 @@ void Resource::PurgeCache(void)
 {
 #ifndef USE_QHEAP
 #ifdef __AMIGA__
-    size_t memsize = Bgetsysmemsize() / 1024 / 1024;
+    //size_t memsize = Bgetsysmemsize() / 1024 / 1024;
 #endif
     for (CACHENODE *node = purgeHead.next; node != &purgeHead; node = node->next)
     {
@@ -985,7 +985,7 @@ void Resource::PurgeCache(void)
         {
 #ifdef __AMIGA__
             // don't purge the sounds if we have enough memory
-            if (memsize >= 128 && (!strcmp(pDict->type, "RAW") || !strcmp(pDict->type, "SFX")))
+            if (/*memsize >= 128 &&*/ (!strcmp(pDict->type, "RAW") || !strcmp(pDict->type, "SFX")))
                 continue;
 #endif
             dassert(pDict->lockCount == 0);
@@ -1000,23 +1000,17 @@ void Resource::PurgeCache(void)
 
 void Resource::PrecacheSounds(void)
 {
-#ifdef __AMIGA__
-    size_t memsize = Bgetsysmemsize() / 1024 / 1024;
-    // don't precache all the sounds if we don't have enough memory
-    if (memsize < 128) return;
-#endif
+#ifndef __AMIGA__
     for (unsigned int i = 0; i < count; i++)
     {
         DICTNODE *pNode = &dict[i];
         if ((!strcmp(pNode->type, "RAW") || !strcmp(pNode->type, "SFX")) && !pNode->ptr)
         {
-#ifdef __AMIGA__
-            if (KB_KeyPressed(sc_Space)) break;
-#endif
             Load(pNode);
             gameHandleEvents();
         }
     }
+#endif
 }
 
 void Resource::RemoveNode(DICTNODE* pNode)

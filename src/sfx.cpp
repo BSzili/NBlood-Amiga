@@ -124,11 +124,7 @@ void sfxPlay3DSound(int x, int y, int z, int soundId, int nSector)
 {
     if (!SoundToggle || soundId < 0) return;
     
-#ifdef __AMIGA__
-    DICTNODE *hRes = sndLookupSfxCached(soundId);
-#else
     DICTNODE *hRes = gSoundRes.Lookup(soundId, "SFX");
-#endif
     if (!hRes)return;
 
     SFX *pEffect = (SFX*)gSoundRes.Load(hRes);
@@ -186,11 +182,7 @@ void sfxPlay3DSound(spritetype *pSprite, int soundId, int chanId, int nFlags)
         return;
     if (soundId < 0)
         return;
-#ifdef __AMIGA__
-    DICTNODE *hRes = sndLookupSfxCached(soundId);
-#else
     DICTNODE *hRes = gSoundRes.Lookup(soundId, "SFX");
-#endif
     if (!hRes)
         return;
 
@@ -304,11 +296,7 @@ void sfxPlay3DSound(spritetype *pSprite, int soundId, int chanId, int nFlags)
 void sfxPlay3DSoundCP(spritetype* pSprite, int soundId, int chanId, int nFlags, int pitch, int volume)
 {
     if (!SoundToggle || !pSprite || soundId < 0) return;
-#ifdef __AMIGA__
-    DICTNODE *hRes = sndLookupSfxCached(soundId);
-#else
     DICTNODE* hRes = gSoundRes.Lookup(soundId, "SFX");
-#endif
     if (!hRes) return;
 
     SFX* pEffect = (SFX*)gSoundRes.Load(hRes);

@@ -562,6 +562,9 @@ void PreloadTiles(void)
         if (sprite[i].statnum < kMaxStatus)
         {
             spritetype *pSprite = &sprite[i];
+#ifndef EDUKE32
+            XSPRITE* pXSprite = &xsprite[pSprite->extra];
+#endif
             switch (pSprite->statnum)
             {
             case kStatDude:
@@ -570,6 +573,7 @@ void PreloadTiles(void)
             case kStatThing:
                 PrecacheThing(pSprite);
                 break;
+#ifndef EDUKE32
             case kStatTraps:
                 if (pSprite->type == kTrapSawCircular)
                 {
@@ -592,12 +596,16 @@ void PreloadTiles(void)
                 }
                 tilePrecacheTile(pSprite->picnum);
                 break;
+            case kStatAmbience:
+                PrecacheSound(pXSprite->data3);
+                break;
+#endif
             default:
                 tilePrecacheTile(pSprite->picnum);
                 break;
             }
 #ifndef EDUKE32
-            XSPRITE* pXSprite = &xsprite[pSprite->extra];
+            //XSPRITE* pXSprite = &xsprite[pSprite->extra];
             spritetype dummysprite;
             switch (pSprite->type)
             {
@@ -932,6 +940,24 @@ void PreloadCache(void)
     int cnt = 0;
     int percentDisplayed = -1;
 
+#ifndef EDUKE32
+    for (int i=0; i<kMaxTiles; i++)
+    {
+        if (walock[i] == 0 || walock[i] >= 200)
+            continue;
+
+        if (TestBitString(gotpic, i) && walock[i] < 199)
+        {
+            //buildprintf("bumping tile %d lock from %d\n", i, walock[i]);
+            walock[i] = 199;
+        }
+        else if (!TestBitString(gotpic, i) && walock[i] > 1)
+        {
+            //buildprintf("releasing tile %d lock from %d\n", i, walock[i]);
+            walock[i] = 1;
+        }
+    }
+#endif
     for (int i=0; i<kMaxTiles && !KB_KeyPressed(sc_Space); i++)
     {
         if (TestBitString(gotpic, i))
@@ -958,7 +984,6 @@ void PreloadCache(void)
 #ifndef EDUKE32
             else
             {
-                //if (walock[i] < 199) walock[i] = 199;
                 cnt++;
                 continue; // only update when we loaded a tile
             }
@@ -1040,17 +1065,37 @@ void PreloadCache(void)
             }
         }
     }
+    size_t memsize = Bgetsysmemsize() / 1024 / 1024;
+    // don't purge the sounds if we have enough memory
+    if (memsize < 128)
+    {
+        for (CACHENODE *node = Resource::purgeHead.next; node != & Resource::purgeHead; node = node->next)
+        {
+            dassert(node->lockCount == 0);
+            dassert(node->ptr != NULL);
+            DICTNODE *pSFXNode = (DICTNODE*)node;
+            if (!pSFXNode->ptr || strcmp(pSFXNode->type, "SFX") || TestBitString(gotsound, pSFXNode->id))
+                continue;
+            //buildprintf("%s %s.%s no longer needed\n", __FUNCTION__, pSFXNode->name, pSFXNode->type);
+            SFX *pSFX = (SFX*)pSFXNode->ptr;
+#ifdef __AMIGA__
+            DICTNODE *pRAWNode = sndLookupRawCached(pSFXNode->id, pSFX->rawName);
+#else
+            DICTNODE *pRAWNode = gSoundRes.Lookup(pSFX->rawName, "RAW");
+#endif
+            if (pRAWNode && pRAWNode->ptr) {
+                //buildprintf("%s %s.%s flushed\n", __FUNCTION__, pRAWNode->name, pRAWNode->type);
+                Resource::Flush(pRAWNode);
+            }
+        }
+    }
     clock = totalclock;
     cnt = 0;
     for (int i=0; i<kMaxCacheSounds && !KB_KeyPressed(sc_Space); i++)
     {
         if (TestBitString(gotsound, i))
         {
-#ifdef __AMIGA__
-            DICTNODE *pSFXNode = sndLookupSfxCached(i);
-#else
             DICTNODE *pSFXNode = gSoundRes.Lookup(i, "SFX");
-#endif
             if (pSFXNode /*&& !pSFXNode->ptr*/) {
                 SFX *pSFX = (SFX*)(pSFXNode->ptr ? pSFXNode->ptr : gSoundRes.Load(pSFXNode));
 #ifdef __AMIGA__

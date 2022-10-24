@@ -326,11 +326,7 @@ void SEQINST::Update(ACTIVE *pActive)
             };
 
             int sndId = surfSfxMove[surf][Random(2)];
-#ifdef __AMIGA__
-            DICTNODE * hRes = sndLookupSfxCached(sndId); SFX * pEffect = (SFX*)gSoundRes.Load(hRes);
-#else
             DICTNODE * hRes = gSoundRes.Lookup(sndId, "SFX"); SFX * pEffect = (SFX*)gSoundRes.Load(hRes);
-#endif
             sfxPlay3DSoundCP(pSprite, sndId, -1, 0, 0, (surfSfxMove[surf][2] != pEffect->relVol) ? pEffect->relVol : surfSfxMove[surf][3]);
         }
         break;

@@ -375,23 +375,7 @@ void sndStartSample(const char *pzSound, int nVolume, int nChannel)
 
 #ifdef __AMIGA__
 #define MAXSFXCACHEID (9017+1)
-//static DICTNODE *sfxResCache[MAXSFXCACHEID] = {0};
 static DICTNODE *rawResCache[MAXSFXCACHEID] = {0};
-
-DICTNODE *sndLookupSfxCached(int soundId)
-{
-    DICTNODE *hRes =  NULL;
-    //if (soundId < MAXSFXCACHEID && sfxResCache[soundId])
-        //hRes = sfxResCache[soundId];
-    //if (!hRes)
-    {
-        hRes = gSoundRes.Lookup(soundId, "SFX");
-        //if (soundId < MAXSFXCACHEID)
-            //sfxResCache[soundId] = hRes;
-    }
-    return hRes;
-}
-
 DICTNODE *sndLookupRawCached(int soundId, const char *rawName)
 {
     DICTNODE *hRes =  NULL;
@@ -412,11 +396,7 @@ void sndStartSample(unsigned int nSound, int nVolume, int nChannel, bool bLoop)
     if (!SoundToggle)
         return;
     dassert(nChannel >= -1 && nChannel < kChannelMax);
-#ifdef __AMIGA__
-    DICTNODE *hSfx = sndLookupSfxCached(nSound);
-#else
     DICTNODE *hSfx = gSoundRes.Lookup(nSound, "SFX");
-#endif
     if (!hSfx)
         return;
     SFX *pEffect = (SFX*)gSoundRes.Lock(hSfx);

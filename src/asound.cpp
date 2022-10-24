@@ -139,7 +139,11 @@ void ambInit(void)
             }
 
             SFX *pSFX = (SFX*)gSoundRes.Load(pSFXNode);
+#ifdef __AMIGA__
+            DICTNODE *pRAWNode = sndLookupRawCached(pSFXNode->id, pSFX->rawName);
+#else
             DICTNODE *pRAWNode = gSoundRes.Lookup(pSFX->rawName, "RAW");
+#endif
             if (!pRAWNode) {
                 //ThrowError("Missing RAW sound \"%s\" used in ambient sound generator %d\n", pSFX->rawName, nSFX);
                 viewSetSystemMessage("Missing RAW sound \"%s\" used in ambient sound generator #%d\n", pSFX->rawName, nSprite);
