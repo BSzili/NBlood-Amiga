@@ -1489,9 +1489,10 @@ void faketimerhandler(void)
     // 20 Hz - 6
     // 30 Hz - 4
     // too frequent network updates slow down the rendering
-    if (totalclock - lastNetUpdateClock < 8) return;
-#endif
+    if (gNetMode == NETWORK_NONE || !gNetENetInit || totalclock - lastNetUpdateClock < 8) return;
+#else
     if (gNetMode != NETWORK_NONE && gNetENetInit)
+#endif
         netUpdate();
 #if 0
     if (gGameClock >= gNetFifoClock && ready2send)
