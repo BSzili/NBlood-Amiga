@@ -49,7 +49,11 @@ int qanimateoffs(int a1, int a2)
             int vd;
             if ((a2&0xc000) == 0x8000)
 #ifndef EDUKE32
-                vd = (crc32once((unsigned char *)&a2, 2)+frameClock)>>((picanm[a1]>>24)&15);
+#ifdef __AMIGA__
+                vd = ((a2&0xFFFF)+frameClock)>>((picanm[a1]>>24)&15);
+#else
+                vd = (Bcrc32(&a2, 2, 0)+frameClock)>>((picanm[a1]>>24)&15);
+#endif
 #else
                 vd = (Bcrc32(&a2, 2, 0)+frameClock)>>(picanm[a1].sf&PICANM_ANIMSPEED_MASK);
 #endif
