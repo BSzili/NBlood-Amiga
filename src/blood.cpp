@@ -1425,6 +1425,10 @@ void StartLevel(GAMEOPTIONS *gameOptions)
     gChokeCounter = 0;
     if (!gDemo.at1)
         gGameMenuMgr.Deactivate();
+#ifdef __AMIGA__
+    viewLoadingScreenUpdate("Loading music...", -1);
+    videoNextPage();
+#endif
     levelTryPlayMusicOrNothing(gGameOptions.nEpisode, gGameOptions.nLevel);
     // viewSetMessage("");
     viewSetErrorMessage("");
