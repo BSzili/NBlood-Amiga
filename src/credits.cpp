@@ -42,13 +42,26 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "sound.h"
 #include "view.h"
 
+inline char keyJoyGetScan(void)
+{
+    char ch = keyGetScan();
+    if (CONTROL_JoystickEnabled && !ch)
+    {
+        int32_t joy = JOYSTICK_GetControllerButtons();
+        JOYSTICK_ClearAllButtons();
+        if ((joy == (1 << CONTROLLER_BUTTON_A)) || (joy == (1 << CONTROLLER_BUTTON_B)) || (joy == (1 << CONTROLLER_BUTTON_START)))
+            ch = 1;
+    }
+    return ch;
+}
+
 char Wait(int nTicks)
 {
     totalclock = 0;
     while (totalclock < nTicks)
     {
         gameHandleEvents();
-        if (keyGetScan())
+        if (keyJoyGetScan())
             return FALSE;
     }
     return TRUE;
@@ -65,7 +78,7 @@ char DoFade(char r, char g, char b, int nTicks)
         gFrameClock += 2;
         scrNextPage();
         scrFadeAmount(divscale16(ClipHigh((int)totalclock, nTicks), nTicks));
-        if (keyGetScan())
+        if (keyJoyGetScan())
             return FALSE;
     } while (totalclock <= nTicks);
     return TRUE;
@@ -82,7 +95,7 @@ char DoUnFade(int nTicks)
         gFrameClock += 2;
         scrNextPage();
         scrFadeAmount(0x10000-divscale16(ClipHigh((int)totalclock, nTicks), nTicks));
-        if (keyGetScan())
+        if (keyJoyGetScan())
             return FALSE;
     } while (totalclock <= nTicks);
     return TRUE;

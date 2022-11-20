@@ -144,7 +144,7 @@ spritetype * CFX::fxSpawn(FX_ID nFx, int nSector, int x, int y, int z, unsigned 
     int nSector2 = nSector;
     if (!FindSector(x, y, z, &nSector2))
         return NULL;
-    if (gbAdultContent && gGameOptions.nGameType <= 0)
+    if (gbAdultContent && gGameOptions.nGameType == kGameTypeSinglePlayer)
     {
         switch (nFx)
         {
@@ -164,10 +164,10 @@ spritetype * CFX::fxSpawn(FX_ID nFx, int nSector, int x, int y, int z, unsigned 
     if (nFx < 0 || nFx >= kFXMax)
         return NULL;
     FXDATA *pFX = &gFXData[nFx];
-    if (gStatCount[1] == 512)
+    if (gStatCount[kStatFX] == 512) // hit upper limit of available sprites, don't spawn any more
     {
-        int nSprite = headspritestat[kStatFX];;
-        while ((sprite[nSprite].flags & 32) && nSprite != -1)
+        int nSprite = headspritestat[kStatFX];
+        while ((sprite[nSprite].flags & 32) && nSprite != -1) // scan through sprites for free slot
             nSprite = nextspritestat[nSprite];
         if (nSprite == -1)
             return NULL;
@@ -314,7 +314,7 @@ void fxSpawnBlood(spritetype *pSprite, int a2)
     int nSector = pSprite->sectnum;
     if (!FindSector(pSprite->x, pSprite->y, pSprite->z, &nSector))
         return;
-    if (gbAdultContent && gGameOptions.nGameType <= 0)
+    if (gbAdultContent && gGameOptions.nGameType == kGameTypeSinglePlayer)
         return;
     spritetype *pBlood = gFX.fxSpawn(FX_27, pSprite->sectnum, pSprite->x, pSprite->y, pSprite->z);
     if (pBlood)
@@ -322,7 +322,7 @@ void fxSpawnBlood(spritetype *pSprite, int a2)
         pBlood->ang = 1024;
         xvel[pBlood->index] = Random2(0x6aaaa);
         yvel[pBlood->index] = Random2(0x6aaaa);
-        zvel[pBlood->index] = -Random(0x10aaaa)-100;
+        zvel[pBlood->index] = -((int)Random(0x10aaaa))-100;
         evPost(pBlood->index, 3, 8, kCallbackFXBloodSpurt);
     }
 }
@@ -335,7 +335,7 @@ void fxSpawnPodBlood(spritetype *pSprite, int a2)
     int nSector = pSprite->sectnum;
     if (!FindSector(pSprite->x, pSprite->y, pSprite->z, &nSector))
         return;
-    if (gbAdultContent && gGameOptions.nGameType <= 0)
+    if (gbAdultContent && gGameOptions.nGameType == kGameTypeSinglePlayer)
         return;
     spritetype *pSpawn;
     if (pSprite->type == kDudePodGreen)
@@ -347,7 +347,7 @@ void fxSpawnPodBlood(spritetype *pSprite, int a2)
         pSpawn->ang = 1024;
         xvel[pSpawn->index] = Random2(0x6aaaa);
         yvel[pSpawn->index] = Random2(0x6aaaa);
-        zvel[pSpawn->index] = -Random(0x10aaaa)-100;
+        zvel[pSpawn->index] = -((int)Random(0x10aaaa))-100;
         evPost(pSpawn->index, 3, 8, kCallbackFXPodBloodSpray);
     }
 }

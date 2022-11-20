@@ -231,16 +231,21 @@ static const char * mouseclickeddefaults[MAXMOUSEBUTTONS] =
    {
    };
 
-
+#if 0
 static const char * mouseanalogdefaults[MAXMOUSEAXES] =
    {
    "analog_turning",
-#ifndef EDUKE32
-   "analog_lookingupanddown",
-#else
    "analog_moving",
-#endif
    };
+#endif
+
+#ifndef EDUKE32
+static const char * mouseanalogdefaults[MAXMOUSEAXES] =
+   {
+   "analog_turning",
+   "analog_lookingupanddown",
+   };
+#endif
 
 #if defined(GEKKO)
 static const char * joystickdefaults[MAXJOYBUTTONSANDHATS] =

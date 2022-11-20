@@ -88,7 +88,7 @@ void levelOverrideINI(const char *pzIni)
 
 void levelPlayIntroScene(int nEpisode)
 {
-    gGameOptions.uGameFlags &= ~4;
+    gGameOptions.uGameFlags &= ~kGameFlagPlayIntro;
     sndStopSong();
     sndKillAllSounds();
     sfxKillAllSounds();
@@ -100,11 +100,14 @@ void levelPlayIntroScene(int nEpisode)
     viewResizeView(gViewSize);
     credReset();
     scrSetDac();
+    ControlInfo info;
+    CONTROL_GetInput(&info); // clear mouse and all input after cutscene has finished playing
+    ctrlClearAllInput();
 }
 
 void levelPlayEndScene(int nEpisode)
 {
-    gGameOptions.uGameFlags &= ~8;
+    gGameOptions.uGameFlags &= ~kGameFlagPlayOutro;
     sndStopSong();
     sndKillAllSounds();
     sfxKillAllSounds();
@@ -325,35 +328,35 @@ void levelEndLevel(int nExitType)
 {
     int nEndingA, nEndingB;
     EPISODEINFO *pEpisodeInfo = &gEpisodeInfo[gGameOptions.nEpisode];
-    gGameOptions.uGameFlags |= 1;
+    gGameOptions.uGameFlags |= kGameFlagContinuing;
     levelGetNextLevels(gGameOptions.nEpisode, gGameOptions.nLevel, &nEndingA, &nEndingB);
     switch (nExitType)
     {
     case kLevelExitNormal:
-        if (nEndingA == -1)
+        if (nEndingA == -1) // no more levels (reached end of episode), trigger credits
         {
-            if (pEpisodeInfo->cutsceneBSmkPath[0])
-                gGameOptions.uGameFlags |= 8;
+            if (pEpisodeInfo->cutsceneBSmkPath[0]) // if ending cutscene file present, set to play movie
+                gGameOptions.uGameFlags |= kGameFlagPlayOutro;
             gGameOptions.nLevel = 0;
-            gGameOptions.uGameFlags |= 2;
+            gGameOptions.uGameFlags |= kGameFlagEnding;
         }
         else
             gNextLevel = nEndingA;
         break;
     case kLevelExitSecret:
-        if (nEndingB == -1)
+        if (nEndingB == -1) // no more levels (reached end of episode), trigger credits
         {
             if (gGameOptions.nEpisode + 1 < gEpisodeCount)
             {
-                if (pEpisodeInfo->cutsceneBSmkPath[0])
-                    gGameOptions.uGameFlags |= 8;
+                if (pEpisodeInfo->cutsceneBSmkPath[0]) // if ending cutscene file present, set to play movie
+                    gGameOptions.uGameFlags |= kGameFlagPlayOutro;
                 gGameOptions.nLevel = 0;
-                gGameOptions.uGameFlags |= 2;
+                gGameOptions.uGameFlags |= kGameFlagEnding;
             }
             else
             {
                 gGameOptions.nLevel = 0;
-                gGameOptions.uGameFlags |= 1;
+                gGameOptions.uGameFlags |= kGameFlagContinuing;
             }
         }
         else

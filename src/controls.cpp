@@ -515,20 +515,6 @@ void ctrlGetInput(void)
         input.q16turn = fix16_sadd(input.q16turn, fix16_sdiv(fix16_from_int(info.mousex), F16(32)));
 #endif
 
-#ifndef EDUKE32
-    // controller input
-    input.strafe -= (info.dx<<4);
-    input.forward -= (info.dz<<4);
-#else
-    input.strafe -= -(info.dx<<5);
-#endif
-
-#if 0
-    if (info.dz < 0)
-        gInput.mlook = ClipRange((info.dz+127)>>7, -127, 127);
-    else
-        gInput.mlook = ClipRange(info.dz>>7, -127, 127);
-#endif
     if (gMouseAim)
 #ifndef EDUKE32
         input.q16mlook = fix16_sadd(input.q16mlook, fix16_from_int(info.dpitch)/4);
@@ -541,6 +527,26 @@ void ctrlGetInput(void)
 #else
         input.forward -= info.mousey;
 #endif
+
+    if (CONTROL_JoystickEnabled) // controller input
+    {
+#ifndef EDUKE32
+        input.strafe -= (info.dx<<4);
+        input.forward -= (info.dz<<4);
+#else
+        input.strafe -= info.dx>>1;
+        input.forward -= info.dz>>1;
+        if (info.mousey == 0)
+        {
+            if (gMouseAim)
+                input.q16mlook = fix16_sadd(input.q16mlook, fix16_sdiv(fix16_from_int(info.dpitch>>4), F16(128)));
+            else
+                input.forward -= info.dpitch>>1;
+        }
+        if (input.q16turn == 0)
+            input.q16turn = fix16_sadd(input.q16mlook, fix16_sdiv(fix16_from_int(info.dyaw>>4), F16(32)));
+#endif
+    }
     if (!gMouseAimingFlipped)
         input.q16mlook = -input.q16mlook;
 

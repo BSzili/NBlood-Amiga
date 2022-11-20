@@ -42,7 +42,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #endif
 
 #ifdef NOONE_EXTENSIONS
-bool gModernMap = false;
+uint8_t gModernMap = false;
 #endif // !NOONE_EXTENSIONS
 
 
@@ -771,7 +771,7 @@ int dbLoadMap(const char *pPath, int *pX, int *pY, int *pZ, short *pAngle, short
     memset(xvel,0,sizeof(xvel));
     memset(yvel,0,sizeof(yvel));
     memset(zvel,0,sizeof(zvel));
-    memset(xsprite,0,sizeof(xsprite));
+    memset(xsprite,0,kMaxXSprites*sizeof(XSPRITE));
     memset(sprite,0,kMaxSprites*sizeof(spritetype));
 
     #ifdef NOONE_EXTENSIONS
@@ -833,7 +833,17 @@ int dbLoadMap(const char *pPath, int *pX, int *pY, int *pZ, short *pAngle, short
         // indicate if the map requires modern features to work properly
         // for maps wich created in PMAPEDIT BETA13 or higher versions. Since only minor version changed,
         // the map is still can be loaded with vanilla BLOOD / MAPEDIT and should work in other ports too.
-        if ((header.version & 0x00ff) == 0x001) gModernMap = true;
+        int tmp = (header.version & 0x00ff);
+        
+        // get the modern features revision
+        switch (tmp) {
+            case 0x001:
+                gModernMap = 1;
+                break;
+            case 0x002:
+                gModernMap = 2;
+                break;
+        }
         #endif
 
     } else {
@@ -1266,8 +1276,18 @@ int dbLoadMap(const char *pPath, int *pX, int *pY, int *pZ, short *pAngle, short
             #ifdef NOONE_EXTENSIONS
             // indicate if the map requires modern features to work properly
             // for maps wich created in different editors (include vanilla MAPEDIT) or in PMAPEDIT version below than BETA13
-            if (!gModernMap && pXSprite->rxID == kChannelMapModernize && pXSprite->rxID == pXSprite->txID && pXSprite->command == kCmdModernFeaturesEnable)
-                gModernMap = true;
+            if (!gModernMap && pXSprite->rxID == pXSprite->txID && pXSprite->command == kCmdModernFeaturesEnable)
+            {
+                // get the modern features revision
+                switch (pXSprite->txID) {
+                case kChannelMapModernRev1:
+                    gModernMap = 1;
+                    break;
+                case kChannelMapModernRev2:
+                    gModernMap = 2;
+                    break;
+                }
+            }
             #endif
         }
 #if 0
@@ -1308,14 +1328,12 @@ int dbLoadMap(const char *pPath, int *pX, int *pY, int *pZ, short *pAngle, short
         else
         {
             initprintf("Corrupted Map file");
-            gSysRes.Unlock(pNode);
             return -1;
         }
     }
     else if (gSongId != 0)
     {
         initprintf("Corrupted Map file");
-        gSysRes.Unlock(pNode);
         return -1;
     }
 
@@ -1390,7 +1408,7 @@ int dbSaveMap(const char *pPath, int nX, int nY, int nZ, short nAngle, short nSe
 {
 #ifdef EDUKE32 // TODO
     char sMapExt[BMAX_PATH];
-    char sBakExt[BMAX_PATH];
+    //char sBakExt[BMAX_PATH];
     int16_t tpskyoff[256];
     int nSpriteNum;
     psky_t *pSky = tileSetupSky(0);

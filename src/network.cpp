@@ -167,7 +167,7 @@ void netResetToSinglePlayer(void)
     myconnectindex = connecthead = 0;
     gInitialNetPlayers = gNetPlayers = numplayers = 1;
     connectpoint2[0] = -1;
-    gGameOptions.nGameType = 0;
+    gGameOptions.nGameType = kGameTypeSinglePlayer;
     gNetMode = NETWORK_NONE;
     UpdateNetworkMenus();
     gGameMenuMgr.Deactivate();
@@ -280,7 +280,7 @@ void CalcGameChecksum(void)
 void netCheckSync(void)
 {
     char buffer[80];
-    if (gGameOptions.nGameType == 0)
+    if (gGameOptions.nGameType == kGameTypeSinglePlayer)
         return;
     if (numplayers == 1)
         return;
@@ -614,7 +614,7 @@ void netBroadcastMyLogoff(bool bRestart)
 void netBroadcastPlayerInfo(int nPlayer)
 {
     PROFILE *pProfile = &gProfile[nPlayer];
-    strcpy(pProfile->name, szPlayerName);
+    Bstrncpyz(pProfile->name, szPlayerName, sizeof(szPlayerName));
     pProfile->skill = gSkill;
     pProfile->nAutoAim = gAutoAim;
     pProfile->nWeaponSwitch = gWeaponSwitch;
@@ -687,7 +687,7 @@ void netWaitForEveryone(char a1)
     } while (p >= 0);
 }
 
-void sub_7AC28(const char *pzString)
+void netBroadcastFrag(const char *pzString)
 {
     if (numplayers < 2)
         return;
@@ -803,7 +803,7 @@ void netGetInput(void)
     */
 #endif
     gNetFifoHead[myconnectindex]++;
-    if (gGameOptions.nGameType == 0 || numplayers == 1)
+    if (gGameOptions.nGameType == kGameTypeSinglePlayer || numplayers == 1)
     {
         for (int p = connecthead; p >= 0; p = connectpoint2[p])
         {
@@ -1320,7 +1320,7 @@ void netInitialize(bool bConsole)
         initprintf("Successfully connected to server\n");
     }
     gNetENetInit = true;
-    gGameOptions.nGameType = 2;
+    gGameOptions.nGameType = kGameTypeBloodBath;
 #else
     netResetToSinglePlayer();
 #endif
@@ -1497,7 +1497,7 @@ void faketimerhandler(void)
 #if 0
     if (gGameClock >= gNetFifoClock && ready2send)
     {
-        gNetFifoClock += 4;
+        gNetFifoClock += kTicsPerFrame;
         netGetInput();
     }
 #endif

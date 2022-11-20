@@ -127,7 +127,7 @@ bool isImmune(spritetype* pSprite, int dmgType, int minScale) {
             return (thingInfo[pSprite->type - kThingBase].dmgControl[dmgType] <= minScale);
         else if (IsDudeSprite(pSprite)) {
             if (IsPlayerSprite(pSprite)) return (gPlayer[pSprite->type - kDudePlayer1].damageControl[dmgType] <= minScale);
-            else return (dudeInfo[pSprite->type - kDudeBase].at70[dmgType] <= minScale);
+            else return (dudeInfo[pSprite->type - kDudeBase].curDamage[dmgType] <= minScale);
         }
     }
 
@@ -1588,7 +1588,6 @@ void aiInitSprite(spritetype *pSprite)
         pXSector = &xsector[nXSector];
     DUDEEXTRA *pDudeExtra = &gDudeExtra[nXSprite];
     DUDEEXTRA_STATS *pDudeExtraE = &gDudeExtra[nXSprite].stats;
-    pDudeExtra->teslaHit = 0;
     pDudeExtra->clock = 0;
     pDudeExtra->teslaHit = 0;
     if (!VanillaMode()) // clear these stats for non-vanilla mode

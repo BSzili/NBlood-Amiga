@@ -97,7 +97,8 @@ void LoadSave::Write(void *pData, int nSize)
 
 void LoadSave::LoadGame(char *pzFile)
 {
-    bool demoWasPlayed = gDemo.at1;
+    const char bDemoWasPlayed = gDemo.at1;
+    const char bGameWasStarted = gGameStarted;
     if (gDemo.at1)
         gDemo.Close();
 
@@ -200,7 +201,7 @@ void LoadSave::LoadGame(char *pzFile)
     }
 #endif
 
-    if ((unsigned)gGameOptions.nEpisode >= gEpisodeCount || (unsigned)gGameOptions.nLevel >= gEpisodeInfo[gGameOptions.nEpisode].nLevels
+    if (gGameOptions.nEpisode >= gEpisodeCount || gGameOptions.nLevel >= gEpisodeInfo[gGameOptions.nEpisode].nLevels
         || Bstrcasecmp(gEpisodeInfo[gGameOptions.nEpisode].levelsInfo[gGameOptions.nLevel].Filename, gGameOptions.zLevelName) != 0)
     {
         if (!gSysRes.Lookup(gGameOptions.zLevelName, "MAP"))
@@ -215,7 +216,8 @@ void LoadSave::LoadGame(char *pzFile)
     }
 
     if (MusicRestartsOnLoadToggle
-        || demoWasPlayed
+        || bDemoWasPlayed
+        || !bGameWasStarted
         || (gMusicPrevLoadedEpisode != gGameOptions.nEpisode || gMusicPrevLoadedLevel != gGameOptions.nLevel))
     {
         levelTryPlayMusicOrNothing(gGameOptions.nEpisode, gGameOptions.nLevel);
@@ -314,9 +316,15 @@ void MyLoadSave::Load(void)
     memset(sector, 0, sizeof(sector[0])*kMaxSectors);
     memset(wall, 0, sizeof(wall[0])*kMaxWalls);
     memset(sprite, 0, sizeof(sprite[0])*kMaxSprites);
+#ifndef __AMIGA__
+    memset(spriteext, 0, sizeof(spriteext[0])*kMaxSprites);
+#endif
     Read(sector, sizeof(sector[0])*numsectors);
     Read(wall, sizeof(wall[0])*numwalls);
     Read(sprite, sizeof(sprite[0])*kMaxSprites);
+#ifndef __AMIGA__
+    Read(spriteext, sizeof(spriteext[0])*kMaxSprites);
+#endif
 #ifdef EDUKE32
     Read(qsector_filler, sizeof(qsector_filler[0])*numsectors);
     Read(qsprite_filler, sizeof(qsprite_filler[0])*kMaxSprites);
@@ -453,6 +461,9 @@ void MyLoadSave::Save(void)
     Write(sector, sizeof(sector[0])*numsectors);
     Write(wall, sizeof(wall[0])*numwalls);
     Write(sprite, sizeof(sprite[0])*kMaxSprites);
+#ifndef __AMIGA__
+    Write(spriteext, sizeof(spriteext[0])*kMaxSprites);
+#endif
 #ifdef EDUKE32
     Write(qsector_filler, sizeof(qsector_filler[0])*numsectors);
     Write(qsprite_filler, sizeof(qsprite_filler[0])*kMaxSprites);
@@ -617,7 +628,9 @@ void LoadSaveSetup(void)
     void ViewLoadSaveConstruct(void);
     void WarpLoadSaveConstruct(void);
     void WeaponLoadSaveConstruct(void);
-
+#ifdef NOONE_EXTENSIONS
+    void nnExtLoadSaveConstruct(void);
+#endif
     myLoadSave = new MyLoadSave();
 
     ActorLoadSaveConstruct();
@@ -633,4 +646,7 @@ void LoadSaveSetup(void)
     ViewLoadSaveConstruct();
     WarpLoadSaveConstruct();
     WeaponLoadSaveConstruct();
+#ifdef NOONE_EXTENSIONS
+    nnExtLoadSaveConstruct();
+#endif
 }

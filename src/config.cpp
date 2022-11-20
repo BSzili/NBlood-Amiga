@@ -75,6 +75,9 @@ int32_t JoystickAnalogueAxes[MAXJOYAXES];
 int32_t JoystickAnalogueScale[MAXJOYAXES];
 int32_t JoystickAnalogueDead[MAXJOYAXES];
 int32_t JoystickAnalogueSaturate[MAXJOYAXES];
+#ifdef EDUKE32
+int32_t JoystickAnalogueInvert[MAXJOYAXES];
+#endif
 uint8_t KeyboardKeys[NUMGAMEFUNCTIONS][2];
 int32_t scripthandle;
 int32_t setupread;
@@ -235,7 +238,6 @@ void CONFIG_SetDefaultKeys(const char (*keyptr)[MAXGAMEFUNCLEN], bool lazy/*=fal
         Bmemset(KeyboardKeys, 0xff, sizeof(KeyboardKeys));
         CONTROL_ClearAllBinds();
     }
-    // TODO return here?
 
     for (int i=0; i < ARRAY_SSIZE(gamefunctions); ++i)
     {
@@ -454,10 +456,10 @@ void CONFIG_SetDefaults(void)
     gMessageTime = 5;
     gMessageFont = 0;
     gbAdultContent = 0;
+    gzAdultPassword[0] = '\0';
     gStereo = 1;
     gShowPlayerNames = 0;
     gShowWeapon = 0;
-    gzAdultPassword[0] = 0;
 
     gMouseAimingFlipped = 0;
     gMouseAim = 1;
@@ -533,6 +535,7 @@ void CONFIG_SetDefaults(void)
     }
 #endif
 
+#if defined(GEKKO) || defined(__AMIGA__)
     for (int i=0; i<MAXJOYBUTTONSANDHATS; i++)
     {
         JoystickFunctions[i][0] = CONFIG_FunctionNameToNum(joystickdefaults[i]);
@@ -547,6 +550,7 @@ void CONFIG_SetDefaults(void)
         JoystickAnalogueDead[i] = DEFAULTJOYSTICKANALOGUEDEAD;
         JoystickAnalogueSaturate[i] = DEFAULTJOYSTICKANALOGUESATURATE;
         CONTROL_SetAnalogAxisScale(i, JoystickAnalogueScale[i], controldevice_joystick);
+        JOYSTICK_SetDeadZone(i, JoystickAnalogueDead[i], JoystickAnalogueSaturate[i]);
 
         JoystickDigitalFunctions[i][0] = CONFIG_FunctionNameToNum(joystickdigitaldefaults[i*2]);
         JoystickDigitalFunctions[i][1] = CONFIG_FunctionNameToNum(joystickdigitaldefaults[i*2+1]);
@@ -564,7 +568,52 @@ void CONFIG_SetDefaults(void)
 #else
         CONTROL_MapAnalogAxis(i, JoystickAnalogueAxes[i]);
 #endif
+
+#ifdef EDUKE32
+        JoystickAnalogueInvert[i] = 0;
+        CONTROL_SetAnalogAxisInvert(i, JoystickAnalogueInvert[i]);
+#endif
     }
+#else
+    for (int i=0; i<MAXJOYBUTTONSANDHATS; i++)
+    {
+        JoystickFunctions[i][0] = -1;
+        JoystickFunctions[i][1] = -1;
+        CONTROL_MapButton(JoystickFunctions[i][0], i, 0, controldevice_joystick);
+        CONTROL_MapButton(JoystickFunctions[i][1], i, 1, controldevice_joystick);
+    }
+
+    for (int i=0; i<MAXJOYAXES; i++)
+    {
+        JoystickAnalogueScale[i] = DEFAULTJOYSTICKANALOGUESCALE;
+        JoystickAnalogueDead[i] = DEFAULTJOYSTICKANALOGUEDEAD;
+        JoystickAnalogueSaturate[i] = DEFAULTJOYSTICKANALOGUESATURATE;
+        CONTROL_SetAnalogAxisScale(i, JoystickAnalogueScale[i], controldevice_joystick);
+        JOYSTICK_SetDeadZone(i, JoystickAnalogueDead[i], JoystickAnalogueSaturate[i]);
+
+        JoystickDigitalFunctions[i][0] = -1;
+        JoystickDigitalFunctions[i][1] = -1;
+#ifndef EDUKE32
+        CONTROL_MapDigitalAxis(i, JoystickDigitalFunctions[i][0], 0, controldevice_joystick);
+        CONTROL_MapDigitalAxis(i, JoystickDigitalFunctions[i][1], 1, controldevice_joystick);
+#else
+        CONTROL_MapDigitalAxis(i, JoystickDigitalFunctions[i][0], 0);
+        CONTROL_MapDigitalAxis(i, JoystickDigitalFunctions[i][1], 1);
+#endif
+
+        JoystickAnalogueAxes[i] = -1;
+#ifndef EDUKE32
+        CONTROL_MapAnalogAxis(i, JoystickAnalogueAxes[i], controldevice_joystick);
+#else
+        CONTROL_MapAnalogAxis(i, JoystickAnalogueAxes[i]);
+#endif
+
+#ifdef EDUKE32
+        JoystickAnalogueInvert[i] = 0;
+        CONTROL_SetAnalogAxisInvert(i, JoystickAnalogueInvert[i]);
+#endif
+    }
+#endif
 }
 
 
@@ -747,6 +796,13 @@ void CONFIG_SetupJoystick(void)
         scale = JoystickAnalogueSaturate[i];
         SCRIPT_GetNumber(scripthandle, "Controls", str,&scale);
         JoystickAnalogueSaturate[i] = scale;
+
+#ifdef EDUKE32
+        Bsprintf(str,"JoystickAnalogInvert%d",i);
+        scale = JoystickAnalogueInvert[i];
+        SCRIPT_GetNumber(scripthandle, "Controls", str,&scale);
+        JoystickAnalogueInvert[i] = scale;
+#endif
     }
 
     for (i=0; i<MAXJOYBUTTONSANDHATS; i++)
@@ -766,6 +822,10 @@ void CONFIG_SetupJoystick(void)
         CONTROL_MapDigitalAxis(i, JoystickDigitalFunctions[i][1], 1);
 #endif
         CONTROL_SetAnalogAxisScale(i, JoystickAnalogueScale[i], controldevice_joystick);
+        JOYSTICK_SetDeadZone(i, JoystickAnalogueDead[i], JoystickAnalogueSaturate[i]);
+#ifdef EDUKE32
+        CONTROL_SetAnalogAxisInvert(i, JoystickAnalogueInvert[i]);
+#endif
     }
 }
 
@@ -960,11 +1020,6 @@ int CONFIG_ReadSetup(void)
     //    SCRIPT_GetNumber(scripthandle, "Screen Setup", "Out", &ud.lockout);
     //    SCRIPT_GetString(scripthandle, "Screen Setup", "Password", &ud.pwlockout[0]);
     //}
-
-#ifdef EDUKE32
-    windowx = -1;
-    windowy = -1;
-#endif
 
 #ifdef EDUKE32
     SCRIPT_GetNumber(scripthandle, "Screen Setup", "MaxRefreshFreq", (int32_t *)&maxrefreshfreq);
@@ -1169,44 +1224,29 @@ void CONFIG_WriteSetup(uint32_t flags)
     {
         for (int i=0; i<MAXMOUSEBUTTONS; i++)
         {
-#ifdef EDUKE32
-            if (CONFIG_FunctionNumToName(MouseFunctions[i][0]))
-#endif
-            {
-                Bsprintf(buf, "MouseButton%d", i);
-                SCRIPT_PutString(scripthandle, "Controls", buf, CONFIG_FunctionNumToName(MouseFunctions[i][0]));
-            }
+            Bsprintf(buf, "MouseButton%d", i);
+            SCRIPT_PutString(scripthandle, "Controls", buf, CONFIG_FunctionNumToName(MouseFunctions[i][0]));
 
-            if (i >= (MAXMOUSEBUTTONS-2)) continue;
+            if (i >= (MAXMOUSEBUTTONS-2)) continue; // scroll wheel
 
-#ifdef EDUKE32
-            if (CONFIG_FunctionNumToName(MouseFunctions[i][1]))
-#endif
-            {
-                Bsprintf(buf, "MouseButtonClicked%d", i);
-                SCRIPT_PutString(scripthandle, "Controls", buf, CONFIG_FunctionNumToName(MouseFunctions[i][1]));
-            }
+            Bsprintf(buf, "MouseButtonClicked%d", i);
+            SCRIPT_PutString(scripthandle, "Controls", buf, CONFIG_FunctionNumToName(MouseFunctions[i][1]));
         }
 
 #if 0
         for (int i=0; i<MAXMOUSEAXES; i++)
         {
-            if (CONFIG_AnalogNumToName(MouseAnalogueAxes[i]))
-            {
-                Bsprintf(buf, "MouseAnalogAxes%d", i);
-                SCRIPT_PutString(scripthandle, "Controls", buf, CONFIG_AnalogNumToName(MouseAnalogueAxes[i]));
-            }
+            Bsprintf(buf, "MouseAnalogAxes%d", i);
+            SCRIPT_PutString(scripthandle, "Controls", buf, CONFIG_AnalogNumToName(MouseAnalogueAxes[i]));
         }
 #endif
 #ifdef EDUKE32
         for (int i=0; i<MAXMOUSEAXES; i++)
         {
-            {
-                Bsprintf(buf, "MouseAnalogAxes%d", i);
-                SCRIPT_PutString(scripthandle, "Controls", buf, CONFIG_AnalogNumToName(MouseAnalogueAxes[i]));
-                Bsprintf(buf,"MouseAnalogScale%d",i);
-                SCRIPT_PutNumber(scripthandle, "Controls", buf, MouseAnalogueScale[i], FALSE, FALSE);
-            }
+            Bsprintf(buf, "MouseAnalogAxes%d", i);
+            SCRIPT_PutString(scripthandle, "Controls", buf, CONFIG_AnalogNumToName(MouseAnalogueAxes[i]));
+            Bsprintf(buf,"MouseAnalogScale%d",i);
+            SCRIPT_PutNumber(scripthandle, "Controls", buf, MouseAnalogueScale[i], FALSE, FALSE);
         }
 #endif
     }
@@ -1215,71 +1255,36 @@ void CONFIG_WriteSetup(uint32_t flags)
     {
         for (int dummy=0; dummy<MAXJOYBUTTONSANDHATS; dummy++)
         {
-#ifdef EDUKE32
-            if (CONFIG_FunctionNumToName(JoystickFunctions[dummy][0]))
-#endif
-            {
-                Bsprintf(buf, "JoystickButton%d", dummy);
-                SCRIPT_PutString(scripthandle, "Controls", buf, CONFIG_FunctionNumToName(JoystickFunctions[dummy][0]));
-            }
+            Bsprintf(buf, "JoystickButton%d", dummy);
+            SCRIPT_PutString(scripthandle, "Controls", buf, CONFIG_FunctionNumToName(JoystickFunctions[dummy][0]));
 
-#ifdef EDUKE32
-            if (CONFIG_FunctionNumToName(JoystickFunctions[dummy][1]))
-#endif
-            {
-                Bsprintf(buf, "JoystickButtonClicked%d", dummy);
-                SCRIPT_PutString(scripthandle, "Controls", buf, CONFIG_FunctionNumToName(JoystickFunctions[dummy][1]));
-            }
+            Bsprintf(buf, "JoystickButtonClicked%d", dummy);
+            SCRIPT_PutString(scripthandle, "Controls", buf, CONFIG_FunctionNumToName(JoystickFunctions[dummy][1]));
         }
         for (int dummy=0; dummy<MAXJOYAXES; dummy++)
         {
-#ifdef EDUKE32
-            if (CONFIG_AnalogNumToName(JoystickAnalogueAxes[dummy]))
-#endif
-            {
-                Bsprintf(buf, "JoystickAnalogAxes%d", dummy);
-                SCRIPT_PutString(scripthandle, "Controls", buf, CONFIG_AnalogNumToName(JoystickAnalogueAxes[dummy]));
-            }
+            Bsprintf(buf, "JoystickAnalogAxes%d", dummy);
+            SCRIPT_PutString(scripthandle, "Controls", buf, CONFIG_AnalogNumToName(JoystickAnalogueAxes[dummy]));
+
+            Bsprintf(buf, "JoystickDigitalAxes%d_0", dummy);
+            SCRIPT_PutString(scripthandle, "Controls", buf, CONFIG_FunctionNumToName(JoystickDigitalFunctions[dummy][0]));
+
+            Bsprintf(buf, "JoystickDigitalAxes%d_1", dummy);
+            SCRIPT_PutString(scripthandle, "Controls", buf, CONFIG_FunctionNumToName(JoystickDigitalFunctions[dummy][1]));
+
+            Bsprintf(buf, "JoystickAnalogScale%d", dummy);
+            SCRIPT_PutNumber(scripthandle, "Controls", buf, JoystickAnalogueScale[dummy], FALSE, FALSE);
+
+            Bsprintf(buf, "JoystickAnalogDead%d", dummy);
+            SCRIPT_PutNumber(scripthandle, "Controls", buf, JoystickAnalogueDead[dummy], FALSE, FALSE);
+
+            Bsprintf(buf, "JoystickAnalogSaturate%d", dummy);
+            SCRIPT_PutNumber(scripthandle, "Controls", buf, JoystickAnalogueSaturate[dummy], FALSE, FALSE);
 
 #ifdef EDUKE32
-            if (CONFIG_FunctionNumToName(JoystickDigitalFunctions[dummy][0]))
+            Bsprintf(buf, "JoystickAnalogInvert%d", dummy);
+            SCRIPT_PutNumber(scripthandle, "Controls", buf, JoystickAnalogueInvert[dummy], FALSE, FALSE);
 #endif
-            {
-                Bsprintf(buf, "JoystickDigitalAxes%d_0", dummy);
-                SCRIPT_PutString(scripthandle, "Controls", buf, CONFIG_FunctionNumToName(JoystickDigitalFunctions[dummy][0]));
-            }
-
-#ifdef EDUKE32
-            if (CONFIG_FunctionNumToName(JoystickDigitalFunctions[dummy][1]))
-#endif
-            {
-                Bsprintf(buf, "JoystickDigitalAxes%d_1", dummy);
-                SCRIPT_PutString(scripthandle, "Controls", buf, CONFIG_FunctionNumToName(JoystickDigitalFunctions[dummy][1]));
-            }
-
-#ifdef EDUKE32
-            if (JoystickAnalogueScale[dummy] != DEFAULTJOYSTICKANALOGUESCALE)
-#endif
-            {
-                Bsprintf(buf, "JoystickAnalogScale%d", dummy);
-                SCRIPT_PutNumber(scripthandle, "Controls", buf, JoystickAnalogueScale[dummy], FALSE, FALSE);
-            }
-
-#ifdef EDUKE32
-            if (JoystickAnalogueDead[dummy] != DEFAULTJOYSTICKANALOGUEDEAD)
-#endif
-            {
-                Bsprintf(buf, "JoystickAnalogDead%d", dummy);
-                SCRIPT_PutNumber(scripthandle, "Controls", buf, JoystickAnalogueDead[dummy], FALSE, FALSE);
-            }
-
-#ifdef EDUKE32
-            if (JoystickAnalogueSaturate[dummy] != DEFAULTJOYSTICKANALOGUESATURATE)
-#endif
-            {
-                Bsprintf(buf, "JoystickAnalogSaturate%d", dummy);
-                SCRIPT_PutNumber(scripthandle, "Controls", buf, JoystickAnalogueSaturate[dummy], FALSE, FALSE);
-            }
         }
     }
 

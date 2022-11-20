@@ -240,6 +240,7 @@ typedef spritetype *tspriteptr_t;
 #define CSTAT_SPRITE_TRANSLUCENT (2)
 #define CSTAT_SPRITE_YFLIP (8)
 #define CSTAT_SPRITE_BLOCK_HITSCAN (0x100)
+#define CSTAT_SPRITE_TRANSLUCENT_INVERT (0x200)
 #define CSTAT_SPRITE_INVISIBLE (0x8000)
 #define CSTAT_SPRITE_ALIGNMENT_FACING (0)
 // wall 16
@@ -627,5 +628,18 @@ static inline void wsrand(int seed)
 }
 
 extern int nextvoxid;
+
+#define CLOCKTICKSPERSECOND 120
+
+#define joyGetName getjoyname
+#define JOYSTICK_SetDeadZone(axis, dead, satur) do { CONTROL_SetJoyAxisDead((axis), (dead)); CONTROL_SetJoyAxisSaturate((axis), (satur)); } while(0)
+#define JOYSTICK_GetControllerButtons() (joyb)
+#define CONTROLLER_BUTTON_A joybutton_A
+#define CONTROLLER_BUTTON_B joybutton_B
+#define CONTROLLER_BUTTON_START joybutton_Start
+#define CONTROLLER_BUTTON_DPAD_UP joybutton_DpadUp
+#define CONTROLLER_BUTTON_DPAD_DOWN joybutton_DpadDown
+#define CONTROLLER_BUTTON_DPAD_LEFT joybutton_DpadLeft
+#define CONTROLLER_BUTTON_DPAD_RIGHT joybutton_DpadRight
 
 #endif

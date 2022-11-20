@@ -76,11 +76,11 @@ static void BiteSeqCallback(int, int nXSprite)
     XSPRITE *pXSprite = &xsprite[nXSprite];
     spritetype* pSprite = &sprite[pXSprite->reference];
     /*
-     * workaround for 
+     * workaround for
      * pXSprite->target >= 0 && pXSprite->target < kMaxSprites in file NBlood/source/blood/src/aiboneel.cpp at line 86
-     * The value of pXSprite->target is -1. 
+     * The value of pXSprite->target is -1.
      * copied from lines 177:181
-     * resolves this case, but may cause other issues? 
+     * resolves this case, but may cause other issues?
      */
     if (pXSprite->target == -1)
     {

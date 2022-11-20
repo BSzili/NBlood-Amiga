@@ -143,7 +143,7 @@ struct PLAYER
     bool                hasKey[8];
     char                hasFlag;
     short               used2[8];  // ??
-    int                 damageControl[7];
+    int                 damageControl[kDamageMax];
     char                curWeapon;
     char                nextWeapon;
     int                 weaponTimer;
@@ -241,10 +241,10 @@ void playerResetPosture(PLAYER* pPlayer);
 extern PLAYER  gPlayer[kMaxPlayers];
 extern PLAYER *gMe, *gView;
 
+extern PROFILE gProfile[kMaxPlayers];
+
 extern bool gBlueFlagDropped;
 extern bool gRedFlagDropped;
-
-extern PROFILE gProfile[kMaxPlayers];
 
 extern int         gPlayerScores[kMaxPlayers];
 extern ClockTicks  gPlayerScoreTicks[kMaxPlayers];
@@ -257,14 +257,14 @@ inline bool IsTargetTeammate(PLAYER *pSourcePlayer, spritetype *pTargetSprite)
         return false;
     if (!IsPlayerSprite(pTargetSprite))
         return false;
-    if (gGameOptions.nGameType == 1 || gGameOptions.nGameType == 3)
+    if (gGameOptions.nGameType == kGameTypeCoop || gGameOptions.nGameType == kGameTypeTeams)
     {
         PLAYER *pTargetPlayer = &gPlayer[pTargetSprite->type - kDudePlayer1];
         if (pSourcePlayer != pTargetPlayer)
         {
-            if (gGameOptions.nGameType == 1)
+            if (gGameOptions.nGameType == kGameTypeCoop)
                 return true;
-            if (gGameOptions.nGameType == 3 && (pSourcePlayer->teamId & 3) == (pTargetPlayer->teamId & 3))
+            if (gGameOptions.nGameType == kGameTypeTeams && (pSourcePlayer->teamId & 3) == (pTargetPlayer->teamId & 3))
                 return true;
         }
     }
@@ -325,3 +325,4 @@ void        voodooTarget(PLAYER *pPlayer);
 void        playerLandingSound(PLAYER *pPlayer);
 void        PlayerSurvive(int, int nXSprite);
 void        PlayerKneelsOver(int, int nXSprite);
+void        playerHandChoke(PLAYER *pPlayer);

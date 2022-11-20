@@ -33,7 +33,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #endif
 
 #ifdef NOONE_EXTENSIONS
-extern bool gModernMap;
+extern uint8_t gModernMap;
 #endif // NOONE_EXTENSIONS
 
 
@@ -283,7 +283,7 @@ struct SPRITEHIT {
 
 #pragma pack(pop)
 
-extern unsigned short gStatCount[kMaxStatus + 1];;
+extern unsigned short gStatCount[kMaxStatus + 1];
 
 extern bool byte_1A76C6, byte_1A76C7, byte_1A76C8;
 extern MAPHEADER2 byte_19AE44;

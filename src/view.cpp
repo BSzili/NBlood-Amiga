@@ -202,7 +202,6 @@ void FontSet(int id, int tile, int space)
         QFONT *pQFont = (QFONT*)gSysRes.Load(hQFont);
         for (int i = 32; i < 128; i++)
         {
-            int const nTile = tile + i - 32;
             QFONTCHAR* pChar = &pQFont->at20[i];
             yoff = min(yoff, pQFont->atf + pChar->oy);
         }
@@ -449,20 +448,15 @@ void fakeProcessInput(PLAYER *pPlayer, GINPUT *pInput)
         predict.at30 = (predict.at30+pInput->q16turn)&0x7ffffff;
     if (pInput->keyFlags.spin180)
         if (!predict.at4c)
-            predict.at4c = -1024;
+            predict.at4c = -kAng180;
     if (predict.at4c < 0)
     {
-        int speed;
-        if (predict.at48 == 1)
-            speed = 64;
-        else
-            speed = 128;
-
+        const int speed = (predict.at48 == 1) ? 64 : 128;
         predict.at4c = min(predict.at4c+speed, 0);
         predict.at30 += fix16_from_int(speed);
 #ifdef EDUKE32
         if (numplayers > 1 && gPrediction)
-            gViewAngleAdjust += float(speed);
+            gViewAngleAdjust += float(ClipHigh(-predict.at4c, speed)); // don't overturn when nearing end of spin
 #endif
     }
 
@@ -1376,7 +1370,7 @@ void viewDrawStats(PLAYER *pPlayer, int x, int y)
         );
     viewDrawText(3, buffer, x, y, 20, 0, 0, true, 256);
     y += nHeight+1;
-    if (gGameOptions.nGameType != 3)
+    if (gGameOptions.nGameType != kGameTypeTeams)
         sprintf(buffer, "K:%d/%d", gKillMgr.at4, max(gKillMgr.at4, gKillMgr.at0));
     else
         sprintf(buffer, "K:%d", pPlayer->fragCount);
@@ -1656,7 +1650,7 @@ void flashTeamScore(ClockTicks arg, int team, bool show)
 
 void viewDrawCtfHud(ClockTicks arg)
 {
-    if (0 == gViewSize)
+    if (gViewSize == 0)
     {
         flashTeamScore(arg, 0, false);
         flashTeamScore(arg, 1, false);
@@ -1705,7 +1699,7 @@ void UpdateStatusBar(ClockTicks arg)
 
     int nPalette = 0;
 
-    if (gGameOptions.nGameType == 3)
+    if (gGameOptions.nGameType == kGameTypeTeams)
     {
         if (pPlayer->teamId & 1)
             nPalette = 7;
@@ -1748,7 +1742,7 @@ void UpdateStatusBar(ClockTicks arg)
             DrawStatNumber("%3d", num, kSBarNumberAmmo, 267, 187, 0, 0, 512);
         }
 
-        if (gGameOptions.nGameType < 2) // don't show keys for bloodbath/teams as all players have every key
+        if (gGameOptions.nGameType <= kGameTypeCoop) // don't show keys for bloodbath/teams as all players have every key
         {
             for (int i = 0; i < 6; i++)
             {
@@ -1811,7 +1805,7 @@ void UpdateStatusBar(ClockTicks arg)
         }
         DrawPackItemInStatusBar(pPlayer, 286, 186, 302, 183, 512);
 
-        if (gGameOptions.nGameType < 2) // don't show keys for bloodbath/teams as all players have every key
+        if (gGameOptions.nGameType <= kGameTypeCoop) // don't show keys for bloodbath/teams as all players have every key
         {
             for (int i = 0; i < 6; i++)
             {
@@ -1946,9 +1940,9 @@ void UpdateStatusBar(ClockTicks arg)
         viewDrawPowerUps(pPlayer);
     }
 
-    if (gGameOptions.nGameType < 1) return;
+    if (gGameOptions.nGameType == kGameTypeSinglePlayer) return;
 
-    if (gGameOptions.nGameType == 3)
+    if (gGameOptions.nGameType == kGameTypeTeams)
     {
 #ifndef __AMIGA__
         if (VanillaMode())
@@ -2096,7 +2090,7 @@ void viewResizeView(int size)
         gViewX1 = xdim-1;
         gViewY0 = 0;
         gViewY1 = ydim-1;
-        if (gGameOptions.nGameType > 0 && gGameOptions.nGameType <= 3)
+        if (gGameOptions.nGameType != kGameTypeSinglePlayer)
         {
 #ifndef EDUKE32
             gViewY0 = (tilesizy[2229]*ydim*((gNetPlayers+3)/4))/200;
@@ -2115,7 +2109,7 @@ void viewResizeView(int size)
         gViewY0 = 0;
         gViewX1 = xdim-1;
         gViewY1 = ydim-1-(25*ydim)/200;
-        if (gGameOptions.nGameType > 0 && gGameOptions.nGameType <= 3)
+        if (gGameOptions.nGameType != kGameTypeSinglePlayer)
         {
 #ifndef EDUKE32
             gViewY0 = (tilesizy[2229]*ydim*((gNetPlayers+3)/4))/200;
@@ -2633,11 +2627,13 @@ tspritetype *viewAddEffect(int nTSprite, VIEW_EFFECT nViewEffect)
             pNSprite->picnum = nVoxel;
             if (pPlayer->curWeapon == kWeaponLifeLeech) // position lifeleech behind player
             {
-                pNSprite->x +=  mulscale30(128, Cos(gView->pSprite->ang));
-                pNSprite->y += mulscale30(128, Sin(gView->pSprite->ang));
+                pNSprite->x += mulscale30(128, Cos(gCameraAng));
+                pNSprite->y += mulscale30(128, Sin(gCameraAng));
             }
-            if ((pPlayer->curWeapon == kWeaponLifeLeech) || (pPlayer->curWeapon == kWeaponVoodoo))  // make lifeleech/voodoo doll always face viewer like sprite
-                pNSprite->ang = (gView->pSprite->ang + 1024) & 2047;
+            if ((pPlayer->curWeapon == kWeaponLifeLeech) || (pPlayer->curWeapon == kWeaponVoodoo)) // make lifeleech/voodoo doll always face viewer like sprite
+                pNSprite->ang = (gCameraAng + kAng180) & kAngMask;
+            else if ((pPlayer->curWeapon == kWeaponProxyTNT) || (pPlayer->curWeapon == kWeaponRemoteTNT)) // make proxy/remote tnt always face viewers like sprite
+                pNSprite->ang = (gCameraAng + kAng180 + kAng45) & kAngMask;
         }
         break;
     }
@@ -2810,7 +2806,7 @@ void viewProcessSprites(int32_t cX, int32_t cY, int32_t cZ, int32_t cA, int32_t 
                         pTSprite->yoffset += picanm[pTSprite->picnum].yofs;
 #endif
                         pTSprite->picnum = voxelIndex[pTSprite->picnum];
-                        if (!voxoff[pTSprite->picnum])
+                        if (!voxoff[pTSprite->picnum][0])
                             qloadvoxel(pTSprite->picnum);
 #ifndef EDUKE32
                         if (((picanm[nTile]>>28)&7) == 7)
@@ -2843,9 +2839,8 @@ void viewProcessSprites(int32_t cX, int32_t cY, int32_t cZ, int32_t cA, int32_t 
 #endif
         {
             int const nRootTile = pTSprite->picnum;
-            int nAnimTile = pTSprite->picnum + animateoffs_replace(pTSprite->picnum, 32768+pTSprite->owner);
-
 #if 0
+            int nAnimTile = pTSprite->picnum + animateoffs_replace(pTSprite->picnum, 32768+pTSprite->owner);
             if (tiletovox[nAnimTile] != -1)
             {
                 pTSprite->yoffset += picanm[nAnimTile].yofs;
@@ -2964,13 +2959,13 @@ void viewProcessSprites(int32_t cX, int32_t cY, int32_t cZ, int32_t cA, int32_t 
         case kStatItem: {
             switch (pTSprite->type) {
                 case kItemFlagABase:
-                    if (pTXSprite && pTXSprite->state > 0 && gGameOptions.nGameType == 3) {
+                    if (pTXSprite && pTXSprite->state > 0 && gGameOptions.nGameType == kGameTypeTeams) {
                         auto pNTSprite = viewAddEffect(nTSprite, kViewEffectBigFlag);
                         if (pNTSprite) pNTSprite->pal = 10;
                     }
                     break;
                 case kItemFlagBBase:
-                    if (pTXSprite && pTXSprite->state > 0 && gGameOptions.nGameType == 3) {
+                    if (pTXSprite && pTXSprite->state > 0 && gGameOptions.nGameType == kGameTypeTeams) {
                         auto pNTSprite = viewAddEffect(nTSprite, kViewEffectBigFlag);
                         if (pNTSprite) pNTSprite->pal = 7;
                     }
@@ -3068,7 +3063,7 @@ void viewProcessSprites(int32_t cX, int32_t cY, int32_t cZ, int32_t cA, int32_t 
                     viewAddEffect(nTSprite, kViewEffectReflectiveBall);
                 }
                 
-                if (gShowWeapon && gGameOptions.nGameType > 0 && gView) {
+                if (gShowWeapon && gGameOptions.nGameType != kGameTypeSinglePlayer && gView) {
                     viewAddEffect(nTSprite, kViewEffectShowWeapon);
                 }
                 
@@ -3082,7 +3077,7 @@ void viewProcessSprites(int32_t cX, int32_t cY, int32_t cZ, int32_t cA, int32_t 
                     }
                 }
                 
-                if (pPlayer->hasFlag > 0 && gGameOptions.nGameType == 3) {
+                if (pPlayer->hasFlag > 0 && gGameOptions.nGameType == kGameTypeTeams) {
                     if (pPlayer->hasFlag&1)  {
                         auto pNTSprite = viewAddEffect(nTSprite, kViewEffectFlag);
                         if (pNTSprite)
@@ -3624,7 +3619,7 @@ void viewDrawScreen(void)
     if (delta < 0)
         delta = 0;
     lastUpdate = totalclock;
-    if (!gPaused && (!CGameMenuMgr::m_bActive || gGameOptions.nGameType != 0))
+    if (!gPaused && (!CGameMenuMgr::m_bActive || gGameOptions.nGameType != kGameTypeSinglePlayer))
     {
 #ifndef EDUKE32
         gInterpolate = (((totalclock-gNetFifoClock)+4) << 16)/4;
@@ -3643,7 +3638,7 @@ void viewDrawScreen(void)
     }
 
 #ifdef EDUKE32
-    if (!gPaused && (!CGameMenuMgr::m_bActive || gGameOptions.nGameType != 0))
+    if (!gPaused && (!CGameMenuMgr::m_bActive || gGameOptions.nGameType != kGameTypeSinglePlayer))
         rotatespritesmoothratio = gInterpolate;
     else
         rotatespritesmoothratio = 65536;
@@ -3717,8 +3712,6 @@ void viewDrawScreen(void)
 #ifdef EDUKE32
         if (gView == gMe && (numplayers <= 1 || gPrediction) && gView->pXSprite->health != 0 && !VanillaMode())
         {
-            CONSTEXPR int upAngle = 289;
-            CONSTEXPR int downAngle = -347;
             fix16_t q16look;
             cA = gViewAngle;
             q16look = gViewLook;
@@ -3757,14 +3750,14 @@ void viewDrawScreen(void)
         {
             CalcPosition(gView->pSprite, (int*)&cX, (int*)&cY, (int*)&cZ, &nSectnum, fix16_to_int(cA), q16horiz);
         }
-        CheckLink((int*)&cX, (int*)&cY, (int*)&cZ, &nSectnum);
+        const char bLink = CheckLink((int*)&cX, (int*)&cY, (int*)&cZ, &nSectnum);
         int v78 = gViewInterpolate ? interpolateang(gScreenTiltO, gScreenTilt, gInterpolate) : gScreenTilt;
         char v14 = 0;
         char v10 = 0;
         bool bDelirium = powerupCheck(gView, kPwUpDeliriumShroom) > 0;
         static bool bDeliriumOld = false;
-        int tiltcs, tiltdim;
-        char v4 = powerupCheck(gView, kPwUpCrystalBall) > 0;
+        int tiltcs = 0, tiltdim = 320;
+        const char bCrystalBall = (powerupCheck(gView, kPwUpCrystalBall) > 0) && (gNetPlayers > 1);
 #ifdef USE_OPENGL
         renderSetRollAngle(0);
 #endif
@@ -3790,16 +3783,11 @@ void viewDrawScreen(void)
                     tiltcs = 1;
                     tiltdim = 640;
                 }
-                else
-                {
-                    tiltcs = 0;
-                    tiltdim = 320;
-                }
                 renderSetTarget(TILTBUFFER, tiltdim, tiltdim);
-                int nAng = v78&511;
-                if (nAng > 256)
+                int nAng = v78&(kAng90-1);
+                if (nAng > kAng45)
                 {
-                    nAng = 512-nAng;
+                    nAng = kAng90-nAng;
                 }
                 renderSetAspect(mulscale16(vr, dmulscale32(Cos(nAng), 262144, Sin(nAng), 163840)), yxaspect);
             }
@@ -3808,7 +3796,7 @@ void viewDrawScreen(void)
                 renderSetRollAngle(v78);
 #endif
         }
-        else if (v4 && gNetPlayers > 1)
+        else if (bCrystalBall)
         {
             int tmp = ((int)totalclock/240)%(gNetPlayers-1);
             int i = connecthead;
@@ -3873,6 +3861,7 @@ void viewDrawScreen(void)
                 vd0 = vc8+(1<<7);
             }
             v54 = ClipRange(v54, -200, 200);
+            int nRORLimit = 32; // limit ROR rendering to 32 times
 RORHACKOTHER:
             int ror_status[16];
             for (int i = 0; i < 16; i++)
@@ -3881,14 +3870,14 @@ RORHACKOTHER:
             DrawMirrors(vd8, vd4, vd0, fix16_from_int(v50), fix16_from_int(v54 + defaultHoriz), gInterpolate, -1);
             drawrooms(vd8, vd4, vd0, v50, v54 + defaultHoriz, vcc);
             yax_drawrooms(viewProcessSprites, vcc, 0, gInterpolate);
-            bool do_ror_hack = false;
-            for (int i = 0; i < 16; i++)
-                if (ror_status[i] != TestBitString(gotpic, 4080 + i))
-                    do_ror_hack = true;
-            if (do_ror_hack)
+            for (int i = 0; nRORLimit && (i < 16); i++) // check if ror needs to be rendered
             {
-                spritesortcnt = 0;
-                goto RORHACKOTHER;
+                if (ror_status[i] != TestBitString(gotpic, 4080 + i))
+                {
+                    spritesortcnt = 0;
+                    nRORLimit--;
+                    goto RORHACKOTHER;
+                }
             }
             memcpy(otherMirrorGotpic, gotpic+510, 2);
             memcpy(gotpic+510, bakMirrorGotpic, 2);
@@ -3957,21 +3946,21 @@ RORHACKOTHER:
             cZ = vfc+(1<<7);
         }
         q16horiz = ClipRange(q16horiz, F16(-200), F16(200));//t3 = getusecticks()-tstart;tstart = getusecticks();
-        int nCountROR = 0;
+        int nRORLimit = 32; // limit ROR rendering to 32 times
 RORHACK:
         int ror_status[16];
         for (int i = 0; i < 16; i++)
             ror_status[i] = TestBitString(gotpic, 4080+i);
         fix16_t deliriumPitchI = gViewInterpolate ? interpolate(fix16_from_int(deliriumPitchO), fix16_from_int(deliriumPitch), gInterpolate) : fix16_from_int(deliriumPitch);
-        DrawMirrors(cX, cY, cZ, cA, q16horiz + fix16_from_int(defaultHoriz) + deliriumPitchI, gInterpolate, gViewIndex);
+        DrawMirrors(cX, cY, cZ, cA, q16horiz + fix16_from_int(defaultHoriz) + deliriumPitchI, gInterpolate, bLink && !VanillaMode() ? gViewIndex : -1); // only hide self sprite while traversing between sector
         int bakCstat = gView->pSprite->cstat;
-        if (gViewPos == 0)
+        if (gViewPos == 0) // don't render self while in first person view
         {
-            gView->pSprite->cstat |= 32768;
+            gView->pSprite->cstat |= CSTAT_SPRITE_INVISIBLE;
         }
-        else
+        else // chase camera - render as transparent
         {
-            gView->pSprite->cstat |= 514;
+            gView->pSprite->cstat |= CSTAT_SPRITE_TRANSLUCENT_INVERT | CSTAT_SPRITE_TRANSLUCENT;
         }
 #ifdef POLYMER
         if (videoGetRenderMode() == REND_POLYMER)
@@ -3981,17 +3970,16 @@ RORHACK:
         renderDrawRoomsQ16(cX, cY, cZ, cA, q16horiz + fix16_from_int(defaultHoriz) + deliriumPitchI, nSectnum);
         yax_drawrooms(viewProcessSprites, nSectnum, 0, gInterpolate);
         viewProcessSprites(cX, cY, cZ, fix16_to_int(cA), gInterpolate);
-        bool do_ror_hack = false;
-        for (int i = 0; i < 16; i++)
-            if (ror_status[i] != TestBitString(gotpic, 4080+i))
-                do_ror_hack = true;
-        if (do_ror_hack && (nCountROR < 32))
+        for (int i = 0; nRORLimit && (i < 16); i++) // check if ror needs to be rendered
         {
-            gView->pSprite->cstat = bakCstat;
-            spritesortcnt = 0;
-            nCountROR++;
-            goto RORHACK;
-        }//t4 = getusecticks()-tstart;tstart = getusecticks();
+            if (ror_status[i] != TestBitString(gotpic, 4080+i))
+            {
+                gView->pSprite->cstat = bakCstat;
+                spritesortcnt = 0;
+                nRORLimit--;
+                goto RORHACK;
+            }
+        }
         sub_5571C(1);
         int nSpriteSortCnt = spritesortcnt;
         renderDrawMasks();//t5 = getusecticks()-tstart;tstart = getusecticks();
@@ -4023,10 +4011,10 @@ RORHACK:
                     vrc = 64+32+4+2+1+1024;
                 }
 #endif
-                int nAng = v78 & 511;
-                if (nAng > 256)
+                int nAng = v78 & (kAng90-1);
+                if (nAng > kAng45)
                 {
-                    nAng = 512 - nAng;
+                    nAng = kAng90 - nAng;
                 }
                 int nScale = dmulscale32(Cos(nAng), 262144, Sin(nAng), 163840)>>tiltcs;
                 rotatesprite(160<<16, 100<<16, nScale, v78+512, TILTBUFFER, 0, 0, vrc, gViewX0, gViewY0, gViewX1, gViewY1);
@@ -4133,7 +4121,7 @@ RORHACK:
             rotatesprite(0, 200<<16, 65536, 0, 2358, 0, 0, 256+22, gViewX0, gViewY0, gViewX1, gViewY1);
             rotatesprite(320<<16, 200<<16, 65536, 1024, 2358, 0, 0, 512+18, gViewX0, gViewY0, gViewX1, gViewY1);
         }
-        if (v4 && gNetPlayers > 1)
+        if (bCrystalBall)
         {
             DoLensEffect();
             viewingRange = viewingrange;
@@ -4165,7 +4153,7 @@ RORHACK:
     if (IsPlayerSprite(gMe->pSprite) && pPSprite->hand == 1)
     {
         //static int lastClock;
-        gChoke.sub_84110(160, zn);
+        gChoke.Draw(160, zn);
         //if ((gGameClock % 5) == 0 && gGameClock != lastClock)
         //{
         //    gChoke.swayV(pPSprite);
@@ -4553,6 +4541,9 @@ void ViewLoadSave::Load(void)
     Read(&deliriumTilt, sizeof(deliriumTilt));
     Read(&deliriumTurn, sizeof(deliriumTurn));
     Read(&deliriumPitch, sizeof(deliriumPitch));
+    gScreenTiltO = gScreenTilt;
+    deliriumTurnO = deliriumTurn;
+    deliriumPitchO = deliriumPitch;
 }
 
 void ViewLoadSave::Save(void)
