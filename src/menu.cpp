@@ -2451,8 +2451,10 @@ void SetupJoystickButtonsMenu(CGameMenuItemChain *pItem)
     {
         for (int nButton = 0; nButton < JOYSTICKITEMSPERPAGE; nButton++)
         {
+#ifdef EDUKE32
             if (nButton >= nMaxJoyButtons) // reached end of button list
                 return;
+#endif
             const char bDoubleTap = nButton & 1;
             const int nJoyButton = ((nPage * JOYSTICKITEMSPERPAGE)>>1) + (nButton>>1); // we halve the button index because button lists are listed in pairs of single tap/double tap inputs
             auto pButton = pItemOptionsControlJoyButton[nPage][nButton];
