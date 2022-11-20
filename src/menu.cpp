@@ -184,14 +184,6 @@ static char const *MenuGameFuncNone = "  -None-";
 static char const *pzGamefuncsStrings[NUMGAMEFUNCTIONS + 1];
 static int nGamefuncsValues[NUMGAMEFUNCTIONS + 1];
 static int nGamefuncsNum;
-/*
-#ifndef EDUKE32
-static char const *pzAnalogStrings[analog_maxtype + 1];
-static int nAnalogValues[analog_maxtype + 1];
-static int nAnalogNum = 0;
-static char const *pzAxisStrings[MAXJOYAXES];
-#endif
-*/
 
 CGameMenu menuMain;
 CGameMenu menuMainWithSave;
@@ -734,10 +726,6 @@ CGameMenu menuOptionsControlJoystickListAxes; // contains list of editable joyst
 CGameMenu menuOptionsControlJoystickAxis[MAXJOYAXES]; // options menu for each joystick axis
 #ifndef EDUKE32
 CGameMenu menuOptionsControlJoystick;
-/*
-CGameMenu menuOptionsControlJoystickButtonAssignment;
-CGameMenu menuOptionsControlJoystickAxisAssignment;
-*/
 CGameMenu menuOptionsControlJoystickReset;
 CGameMenu menuOptionsControlJoystickResetClassic;
 #endif
@@ -807,13 +795,9 @@ CGameMenuItemSliderFloat itemOptionsControlMouseYSensitivity("VERT SENS:", 3, 66
 #endif
 
 #ifndef EDUKE32
-//void SetupJoystickButtonMenu(CGameMenuItemChain *pItem);
-//void SetupJoystickAxisMenu(CGameMenuItemChain *pItem);
 void ResetJoystick(CGameMenuItemChain *pItem);
 void ResetJoystickClassic(CGameMenuItemChain *pItem);
 CGameMenuItemTitle itemOptionsControlJoystickTitle("JOYSTICK SETUP", 1, 160, 20, 2038);
-//CGameMenuItemChain itemOptionsControlJoystickButton("Button assingment...", 1, 0, 60, 320, 1, &menuOptionsControlJoystickButtonAssignment, -1, SetupJoystickButtonMenu, 0);
-//CGameMenuItemChain itemOptionsControlJoystickAxis("Axis assingment...", 1, 0, 80, 320, 1, &menuOptionsControlJoystickAxisAssignment, -1, SetupJoystickAxisMenu, 0);
 #if 1
 CGameMenuItemChain itemOptionsControlJoystickReset("Reset Mapping (modern)", 1, 0, 100, 320, 1, NULL, -1, ResetJoystick, 0);
 CGameMenuItemChain itemOptionsControlJoystickResetClassic("Reset Mapping (classic)", 1, 0, 120, 320, 1, NULL, -1, ResetJoystickClassic, 0);
@@ -823,31 +807,6 @@ CGameMenuItemChain itemOptionsControlJoystickConfirmClassic("Do you really want 
 CGameMenuItemChain itemOptionsControlJoystickReset("Reset Mapping (default)", 1, 0, 100, 320, 1, &menuOptionsControlJoystickReset, -1, NULL, 0);
 CGameMenuItemChain itemOptionsControlJoystickResetClassic("Reset Mapping (classic)", 1, 0, 120, 320, 1, &menuOptionsControlJoystickResetClassic, -1, NULL, 0);
 #endif
-
-/*
-#define MENUJOYFUNCTIONS (15) // TODO find a constant for this
-void SetJoystickPressMode(CGameMenuItemZCycle *pItem);
-void SetJoystickButton(CGameMenuItemZCycle *pItem);
-static int gJoystickPressMode = 0;
-const char *pzJoystickPressStrings[] = {"SINGLE", "DOUBLE"};
-CGameMenuItemZCycle itemOptionsControlJoystickMode("BUTTON PRESS TYPE:", 3, 66, 40-5, 180, 0, SetJoystickPressMode, pzJoystickPressStrings, ARRAY_SIZE(pzJoystickPressStrings), 0);
-CGameMenuItemZCycle *pItemOptionsControlJoystickButton[MENUJOYFUNCTIONS];
-
-void SetJoystickAxis(CGameMenuItemZCycle *pItem);
-void SetJoystickAxisAnalog(CGameMenuItemZCycle *pItem);
-void SetJoystickAxisDigial(CGameMenuItemZCycle *pItem);
-void SetJoystickAxisScale(CGameMenuItemSlider *pItem);
-void SetJoystickAxisDead(CGameMenuItemSlider *pItem);
-void SetJoystickAxisSaturate(CGameMenuItemSlider *pItem);
-static int gJoystickAxis = 0;
-CGameMenuItemZCycle itemOptionsControlJoystickAxisSelect("SELECTED AXIS:", 3, 66, 40, 180, 0, SetJoystickAxis, NULL, 0, 0);
-CGameMenuItemZCycle itemOptionsControlJoystickAxisAnalog("ANALOG:", 3, 66, 60, 180, 0, SetJoystickAxisAnalog, NULL, 0, 0);
-CGameMenuItemZCycle itemOptionsControlJoystickAxisDigiP("DIGITAL+:", 3, 66, 70, 180, 0, SetJoystickAxisDigial, NULL, 0, 0, true);
-CGameMenuItemZCycle itemOptionsControlJoystickAxisDigiM("DIGITAL-:", 3, 66, 80, 180, 0, SetJoystickAxisDigial, NULL, 0, 0, true);
-CGameMenuItemSlider itemOptionsControlJoystickAxisScale("SCALE:", 3, 66, 100, 180, 0, 0, 65536, 1024, SetJoystickAxisScale, -1, -1, kMenuSliderQ16);
-CGameMenuItemSlider itemOptionsControlJoystickAxisDead("DEAD ZONE:", 3, 66, 110, 180, 0, 0, 32767, 1024, SetJoystickAxisDead, -1, -1, kMenuSliderSensitivity);
-CGameMenuItemSlider itemOptionsControlJoystickAxisSaturate("SATURATE:", 3, 66, 120, 180, 0, 0, 32767, 1024, SetJoystickAxisSaturate, -1, -1, kMenuSliderSensitivity);
-*/
 #endif
 
 void SetupNetworkMenu(void);
@@ -1739,50 +1698,6 @@ void SetupOptionsMenu(void)
         menuOptionsControlJoystickAxis[nAxis].Add(pItemOptionsControlJoystickAxisSaturate[nAxis], false);
         menuOptionsControlJoystickAxis[nAxis].Add(&itemBloodQAV, false);
     }
-
-#ifndef EDUKE32
-#if 0
-    //joynumaxes = 6; // TODO REMOVE!
-    menuOptionsControlJoystick.Add(&itemOptionsControlJoystickTitle, false);
-    if (joynumbuttons > 0)
-        menuOptionsControlJoystick.Add(&itemOptionsControlJoystickButton, true);
-    if (joynumaxes > 0)
-        menuOptionsControlJoystick.Add(&itemOptionsControlJoystickAxis, false);
-    menuOptionsControlJoystick.Add(&itemOptionsControlJoystickReset, false);
-    menuOptionsControlJoystick.Add(&itemOptionsControlJoystickResetClassic, false);
-    menuOptionsControlJoystick.Add(&itemBloodQAV, false);
-
-    menuOptionsControlJoystickButtonAssignment.Add(&itemOptionsControlJoystickTitle, false);
-    menuOptionsControlJoystickButtonAssignment.Add(&itemOptionsControlJoystickMode, true);
-    y = 50;
-    //for (int i = 0; i < MENUJOYFUNCTIONS; i++)
-    for (int i = 0; i < joynumbuttons; i++)
-    {
-        pItemOptionsControlJoystickButton[i] = new CGameMenuItemZCycle(getjoyname(1,i), 3, 66, y, 180, 0, SetJoystickButton, pzGamefuncsStrings, NUMGAMEFUNCTIONS+1, 0, true);
-        menuOptionsControlJoystickButtonAssignment.Add(pItemOptionsControlJoystickButton[i], /*i == 0*/false);
-        y += 10;
-    }
-    menuOptionsControlJoystickButtonAssignment.Add(&itemBloodQAV, false);
-
-    menuOptionsControlJoystickAxisAssignment.Add(&itemOptionsControlJoystickTitle, false);
-    for (int i = 0; i < joynumaxes; i++)
-    {
-        pzAxisStrings[i] = getjoyname(0,i);
-    }
-    itemOptionsControlJoystickAxisSelect.SetTextArray(pzAxisStrings, joynumaxes, 0);
-    menuOptionsControlJoystickAxisAssignment.Add(&itemOptionsControlJoystickAxisSelect, true);
-    itemOptionsControlJoystickAxisAnalog.SetTextArray(pzAnalogStrings, nAnalogNum, 0);
-    menuOptionsControlJoystickAxisAssignment.Add(&itemOptionsControlJoystickAxisAnalog, false);
-    itemOptionsControlJoystickAxisDigiP.SetTextArray(pzGamefuncsStrings, NUMGAMEFUNCTIONS+1, 0);
-    menuOptionsControlJoystickAxisAssignment.Add(&itemOptionsControlJoystickAxisDigiP, false);
-    itemOptionsControlJoystickAxisDigiM.SetTextArray(pzGamefuncsStrings, NUMGAMEFUNCTIONS+1, 0);
-    menuOptionsControlJoystickAxisAssignment.Add(&itemOptionsControlJoystickAxisDigiM, false);
-    menuOptionsControlJoystickAxisAssignment.Add(&itemOptionsControlJoystickAxisScale, false);
-    menuOptionsControlJoystickAxisAssignment.Add(&itemOptionsControlJoystickAxisDead, false);
-    menuOptionsControlJoystickAxisAssignment.Add(&itemOptionsControlJoystickAxisSaturate, false);
-    menuOptionsControlJoystickAxisAssignment.Add(&itemBloodQAV, false);
-#endif
-#endif
 }
 
 void SetupMenus(void)
@@ -1808,27 +1723,6 @@ void SetupMenus(void)
     }
 
     nGamefuncsNum = k;
-
-	/*
-#ifndef EDUKE32
-    pzAnalogStrings[0] = MenuGameFuncNone;
-    nAnalogValues[0] = -1;
-    k = 1;
-    for (int i = 0; i < analog_maxtype; ++i)
-    {
-        const char *name = CONFIG_AnalogNumToName(i);
-        if (name != NULL)
-        {
-            name = strchr(name, '_') + 1; // skip the "analog_" part
-            pzAnalogStrings[k] = name;
-            nAnalogValues[k] = i;
-            ++k;
-        }
-    }
-
-    nAnalogNum = k;
-#endif
-	*/
 
     SetupLoadingScreen();
     SetupKeyListMenu();
@@ -2824,103 +2718,6 @@ void SetupMouseButtonMenu(CGameMenuItemChain *pItem)
 }
 
 #ifndef EDUKE32
-/*
-void SetJoystickButton(CGameMenuItemZCycle *pItem)
-{
-    for (int i = 0; i < MENUJOYFUNCTIONS; i++)
-    {
-        if (pItem == pItemOptionsControlJoystickButton[i])
-        {
-            int nFunc = nGamefuncsValues[pItem->m_nFocus];
-            JoystickFunctions[i][gJoystickPressMode] = nFunc;
-            CONTROL_MapButton(nFunc, i, gJoystickPressMode, controldevice_joystick);
-            break;
-        }
-    }
-}
-
-void SetupJoystickButtonMenu(CGameMenuItemChain *pItem)
-{
-    UNREFERENCED_PARAMETER(pItem);
-    for (int i = 0; i < MENUJOYFUNCTIONS; i++)
-    {
-        auto pItem = pItemOptionsControlJoystickButton[i];
-        pItem->m_nFocus = 0;
-        for (int j = 0; j < NUMGAMEFUNCTIONS+1; j++)
-        {
-            if (JoystickFunctions[i][gJoystickPressMode] == nGamefuncsValues[j])
-            {
-                pItem->m_nFocus = j;
-                break;
-            }
-        }
-    }
-}
-
-void SetJoystickPressMode(CGameMenuItemZCycle *pItem)
-{
-    gJoystickPressMode = pItem->m_nFocus;
-    SetupJoystickButtonMenu(NULL);
-}
-
-void SetupJoystickAxisMenu(CGameMenuItemChain *pItem)
-{
-    UNREFERENCED_PARAMETER(pItem);
-    int k = 0;
-    for (int i = 0; i < nAnalogNum; ++i)
-    {
-        if (JoystickAnalogueAxes[gJoystickAxis] == nAnalogValues[i])
-        {
-            k = i;
-            break;
-        }
-    }
-    itemOptionsControlJoystickAxisAnalog.SetTextIndex(k);
-    itemOptionsControlJoystickAxisDigiP.SetTextIndex(JoystickDigitalFunctions[gJoystickAxis][1] + 1);
-    itemOptionsControlJoystickAxisDigiM.SetTextIndex(JoystickDigitalFunctions[gJoystickAxis][0] + 1);
-    itemOptionsControlJoystickAxisScale.nValue = JoystickAnalogueScale[gJoystickAxis];
-    itemOptionsControlJoystickAxisDead.nValue = JoystickAnalogueDead[gJoystickAxis];
-    itemOptionsControlJoystickAxisSaturate.nValue = JoystickAnalogueSaturate[gJoystickAxis];
-}
-
-void SetJoystickAxis(CGameMenuItemZCycle *pItem)
-{
-    gJoystickAxis = pItem->m_nFocus;
-    SetupJoystickAxisMenu(NULL);
-}
-
-void SetJoystickAxisAnalog(CGameMenuItemZCycle *pItem)
-{
-    JoystickAnalogueAxes[gJoystickAxis] = nAnalogValues[pItem->m_nFocus];
-    CONTROL_MapAnalogAxis(gJoystickAxis, JoystickAnalogueAxes[gJoystickAxis], controldevice_joystick);
-}
-
-void SetJoystickAxisDigial(CGameMenuItemZCycle *pItem)
-{
-    int k = (pItem == &itemOptionsControlJoystickAxisDigiP) ? 1 : 0;
-    JoystickDigitalFunctions[gJoystickAxis][k] = pItem->m_nFocus - 1;
-    CONTROL_MapDigitalAxis(gJoystickAxis, JoystickDigitalFunctions[gJoystickAxis][k], 0, controldevice_joystick);
-}
-
-void SetJoystickAxisScale(CGameMenuItemSlider *pItem)
-{
-    JoystickAnalogueScale[gJoystickAxis] = pItem->nValue;
-    CONTROL_SetAnalogAxisScale(gJoystickAxis, JoystickAnalogueScale[gJoystickAxis], controldevice_joystick);
-}
-
-void SetJoystickAxisDead(CGameMenuItemSlider *pItem)
-{
-    JoystickAnalogueDead[gJoystickAxis] = pItem->nValue;
-    CONTROL_SetJoyAxisDead(gJoystickAxis, JoystickAnalogueDead[gJoystickAxis]);
-}
-
-void SetJoystickAxisSaturate(CGameMenuItemSlider *pItem)
-{
-    JoystickAnalogueSaturate[gJoystickAxis] = pItem->nValue;
-    CONTROL_SetJoyAxisSaturate(gJoystickAxis, JoystickAnalogueSaturate[gJoystickAxis]);
-}
-*/
-
 void ResetJoystick(CGameMenuItemChain *pItem)
 {
     UNREFERENCED_PARAMETER(pItem);
