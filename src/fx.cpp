@@ -244,11 +244,14 @@ void CFX::fxProcess(void)
         dassert(pSprite->type < kFXMax);
         FXDATA *pFXData = &gFXData[pSprite->type];
 #ifdef __AMIGA__
-        // no gravity or velocity
-        if (!pFXData->gravity && !xvel[pSprite->index] && !yvel[pSprite->index] && !(zvel[pSprite->index]>>8)) continue;
-        //printf("nSprite %4d type %d pic %d vel (%d,%d,%d) gravity %d pos (%d,%d,%d) floorz %d ceilingz %d\n", nSprite, pSprite->type, pSprite->picnum, xvel[nSprite], yvel[nSprite], zvel[nSprite], pFXData->gravity, pSprite->x, pSprite->y, pSprite->z, sector[pSprite->sectnum].floorz, sector[pSprite->sectnum].ceilingz);
+        // don't run airdrag if the effect doesn't need it
+        if (pFXData->airdrag)
 #endif
         actAirDrag(pSprite, pFXData->airdrag);
+#ifdef __AMIGA__
+        // no gravity or velocity
+        if (!pFXData->gravity && !xvel[nSprite] && !yvel[nSprite] && !zvel[nSprite]) continue;
+#endif
         if (xvel[nSprite])
             pSprite->x += xvel[nSprite]>>12;
         if (yvel[nSprite])
