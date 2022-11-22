@@ -378,6 +378,9 @@ void seqSpawn(int nSeq, int nType, int nXIndex, int nCallbackID)
     SEQINST *pInst = GetInstance(nType, nXIndex);
     if (!pInst) return;
     
+#ifdef __AMIGA__
+    if (pInst->isPlaying && pInst->nSeq == nSeq) return;
+#endif
     DICTNODE *hSeq = gSysRes.Lookup(nSeq, "SEQ");
     if (!hSeq)
         ThrowError("Missing sequence #%d", nSeq);
