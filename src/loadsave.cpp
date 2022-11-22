@@ -176,6 +176,21 @@ void LoadSave::LoadGame(char *pzFile)
     gGameStarted = 1;
     bVanilla = false;
     
+#ifdef __AMIGA__
+    // remove old bullet holes and spent casing
+    if (gGameOptions.nGameType == kGameTypeSinglePlayer)
+    {
+        for (int nSprite = headspritestat[kStatFX]; nSprite >= 0; nSprite = nextspritestat[nSprite])
+        {
+            spritetype *pSprite = &sprite[nSprite];
+            if (pSprite->type == FX_43 || pSprite->type == FX_51)
+            {
+                //buildprintf("freed FX sprite %d type %d picnum %d\n", nSprite, pSprite->type, pSprite->picnum);
+                gFX.fxFree(nSprite);
+            }
+        }
+    }
+#endif
 
 #ifdef USE_STRUCT_TRACKERS
     Bmemset(sectorchanged, 0, sizeof(sectorchanged));

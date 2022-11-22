@@ -173,33 +173,6 @@ spritetype * CFX::fxSpawn(FX_ID nFx, int nSector, int x, int y, int z, unsigned 
             return NULL;
         fxKill(nSprite);
     }
-#ifdef __AMIGA__
-    // limit the bullet holes and ejected shells/brass
-    if (!VanillaMode() && gGameOptions.nGameType <= 0 && nFx >= FX_37 && nFx <= FX_43)
-    {
-        int type = (nFx < FX_43) ? FX_51 : nFx;
-        int count = 0;
-        for (int nSprite = headspritestat[kStatFX]; nSprite >= 0; nSprite = nextspritestat[nSprite])
-        {
-            spritetype *pSprite = &sprite[nSprite];
-            if (pSprite->type == type)
-                count++;
-        }
-        //printf("%s count %d\n", __FUNCTION__, count);
-        if (count > 128)
-        {
-            for (int nSprite = headspritestat[kStatFX]; nSprite >= 0; nSprite = nextspritestat[nSprite])
-            {//printf("%s nSprite %d\n", __FUNCTION__, nSprite);
-                spritetype *pSprite = &sprite[nSprite];
-                if (pSprite->type == type)
-                {
-                    fxKill(nSprite);
-                    break;
-                }
-            }
-        }
-    }
-#endif
     spritetype *pSprite = actSpawnSprite(nSector, x, y, z, 1, 0);
     pSprite->type = nFx;
     pSprite->picnum = pFX->picnum;
@@ -226,6 +199,14 @@ spritetype * CFX::fxSpawn(FX_ID nFx, int nSector, int x, int y, int z, unsigned 
     }
     if (duration == 0) // no override duration set, load from global fx data struct
         duration = pFX->duration;
+#ifdef __AMIGA__
+    extern bool bVanilla;
+    if (!bVanilla && duration == 0 && nFx == FX_43)
+    {
+        // remove bullet holes after 4 seconds
+        duration = 480;
+    }
+#endif
     if (duration)
         evPost((int)pSprite->index, 3, duration+Random2(duration>>1), kCallbackRemove);
     return pSprite;

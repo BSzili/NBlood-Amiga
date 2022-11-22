@@ -514,6 +514,14 @@ void sleeveStopBouncing(spritetype* pSprite) {
 
     pSprite->type = FX_51; // static spent casing
     pSprite->xrepeat = pSprite->yrepeat = 10;
+#ifdef __AMIGA__
+    extern bool bVanilla;
+    if (!bVanilla)
+    {
+        // remove spent casing after 4 seconds
+        evPost((int)pSprite->index, 3, 480, kCallbackRemove);
+    }
+#endif
 }
 
 
