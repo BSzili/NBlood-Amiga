@@ -350,7 +350,15 @@ void UpdateAimVector(PLAYER * pPlayer)
                 continue;
             if (pWeaponTrack->at10)
             {
+#ifdef __AMIGA__
+                int t;
+                if ((nDist<<12) < pWeaponTrack->at10)
+                    t = 0;
+                else if (xvel[nSprite] || yvel[nSprite] || zvel[nSprite])
+                    t = divscale12(nDist,pWeaponTrack->at10);
+#else
                 int t = divscale12(nDist,pWeaponTrack->at10);
+#endif
                 x2 += (xvel[nSprite]*t)>>12;
                 y2 += (yvel[nSprite]*t)>>12;
                 z2 += (zvel[nSprite]*t)>>8;
@@ -366,6 +374,10 @@ void UpdateAimVector(PLAYER * pPlayer)
             int angle = getangle(x2-x,y2-y);
             if (klabs(((angle-pPSprite->ang+1024)&2047)-1024) > pWeaponTrack->at8)
                 continue;
+#ifdef __AMIGA__
+            // aim targets are only used by the Voodoo doll's alt fire
+            if (pPlayer->input.buttonFlags.shoot2 && pPlayer->curWeapon == kWeaponVoodoo)
+#endif
             if (pPlayer->aimTargetsCount < 16 && cansee(x,y,z,pPSprite->sectnum,x2,y2,z2,pSprite->sectnum))
                 pPlayer->aimTargets[pPlayer->aimTargetsCount++] = nSprite;
             // Inlined?
@@ -416,6 +428,10 @@ void UpdateAimVector(PLAYER * pPlayer)
                 int angle = getangle(dx,dy);
                 if (klabs(((angle-pPSprite->ang+1024)&2047)-1024) > pWeaponTrack->atc)
                     continue;
+#ifdef __AMIGA__
+                // aim targets are only used by the Voodoo doll's alt fire
+                if (pPlayer->input.buttonFlags.shoot2 && pPlayer->curWeapon == kWeaponVoodoo)
+#endif
                 if (pPlayer->aimTargetsCount < 16 && cansee(x,y,z,pPSprite->sectnum,pSprite->x,pSprite->y,pSprite->z,pSprite->sectnum))
                     pPlayer->aimTargets[pPlayer->aimTargetsCount++] = nSprite;
                 // Inlined?
