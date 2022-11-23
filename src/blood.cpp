@@ -3496,9 +3496,11 @@ bool DemoRecordStatus(void) {
     return gDemo.at0;
 }
 
+#ifndef __AMIGA__
 bool VanillaMode() {
     return gDemo.m_bLegacy && gDemo.at1;
 }
+#endif
 
 bool fileExistsRFF(int id, const char *ext) {
     return gSysRes.Lookup(id, ext);

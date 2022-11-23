@@ -80,7 +80,13 @@ void ScanINIFiles(void);
 bool LoadArtFile(const char *pzFile);
 void LoadExtraArts(void);
 bool DemoRecordStatus(void);
+#ifdef __AMIGA__
+//static inline bool VanillaMode() { return gDemo.m_bLegacy && gDemo.at1; }
+extern bool bVanilla;
+static inline bool VanillaMode() { return bVanilla; }
+#else
 bool VanillaMode(void);
+#endif
 bool fileExistsRFF(int id, const char* ext);
 int sndTryPlaySpecialMusic(int nMusic);
 void sndPlaySpecialMusicOrNothing(int nMusic);
