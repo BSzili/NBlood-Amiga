@@ -90,30 +90,16 @@ void Calc3DValues(BONKLE *pBonkle)
     int distanceL = approxDist(pBonkle->curPos.x - earL.x, pBonkle->curPos.y - earL.y);
     lVol = Vol3d(angle - (gMe->pSprite->ang - 85), v18);
     int phaseLeft = mulscale16r(distanceL, pBonkle->format == 1 ? 4114 : 8228);
-#ifdef __AMIGA__
-    if (gStereo)
-    {
-#endif
     lPitch = scale(pBonkle->pitch, dmulscale30r(cosVal, earVL.dx, sinVal, earVL.dy) + 5853, v8 + 5853);
     if (lPitch < 0 || lPitch > pBonkle->pitch * 4)
         lPitch = pBonkle->pitch;
-#ifdef __AMIGA__
-    }
-#endif
 
     int distanceR = approxDist(pBonkle->curPos.x - earR.x, pBonkle->curPos.y - earR.y);
     rVol = Vol3d(angle - (gMe->pSprite->ang + 85), v14);
     int phaseRight = mulscale16r(distanceR, pBonkle->format == 1 ? 4114 : 8228);
-#ifdef __AMIGA__
-    if (gStereo)
-    {
-#endif
     rPitch = scale(pBonkle->pitch, dmulscale30r(cosVal, earVR.dx, sinVal, earVR.dy) + 5853, v8 + 5853);
     if (rPitch < 0 || rPitch > pBonkle->pitch * 4)
         rPitch = pBonkle->pitch;
-#ifdef __AMIGA__
-    }
-#endif
 
     int phaseMin = ClipHigh(phaseLeft, phaseRight);
     lPhase = phaseRight - phaseMin;

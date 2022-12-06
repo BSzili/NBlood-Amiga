@@ -469,13 +469,13 @@ void CONFIG_SetDefaults(void)
 #ifdef __AMIGA__
     MixRate = 22050;
     NumBits = 8;
-    NumVoices = 8;
+    NumVoices = 16;
     MusicVolume = 255;
     gPowerupDuration = 0; // TODO this is bugged with shrinked screens
     gDetail = 1;
     gViewInterpolate = 0;
     gBrightness = 0; // Blood has its own gamma system, make sure this is off
-    gStereo = 0;
+    //gStereo = 0;
     gSetup.usejoystick = 1;
 #endif
 
