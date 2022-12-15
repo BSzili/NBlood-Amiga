@@ -1279,7 +1279,13 @@ void StartLevel(GAMEOPTIONS *gameOptions)
         for (int i = connecthead; i >= 0; i = connectpoint2[i])
         {
             memcpy(&gPlayerTemp[i],&gPlayer[i],sizeof(PLAYER));
+#ifdef __AMIGA__
+            // TODO optimizer issue workaround
+            volatile int extra = gPlayer[i].pSprite->extra;
+            gHealthTemp[i] = xsprite[extra].health;
+#else
             gHealthTemp[i] = xsprite[gPlayer[i].pSprite->extra].health;
+#endif
         }
     }
     bVanilla = gDemo.at1 && gDemo.m_bLegacy;
