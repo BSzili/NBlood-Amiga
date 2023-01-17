@@ -126,8 +126,10 @@ void gltexinvalidate (long dapicnum, long dapalnum, long dameth);
 
 
 #define ClockTicks long
-#define timerInit inittimer
-#define timerSetCallback installusertimercallback
+//#define timerInit inittimer
+//#define timerSetCallback installusertimercallback
+#define timerInit(tickspersecond) { int tps = (tickspersecond);
+#define timerSetCallback(callback) inittimer(tps, (callback)); }
 #define timerGetTicks getticks
 #define timerGetPerformanceCounter getusecticks
 #define timerGetPerformanceFrequency() (1000*1000)
@@ -279,6 +281,7 @@ typedef spritetype *tspriteptr_t;
 #define CONTROL_ClearAllBinds()
 extern int CONTROL_BindsEnabled; // TODO
 #define KB_UnBoundKeyPressed KB_KeyPressed
+extern kb_scancode KB_LastScan;
 
 
 // math
@@ -476,8 +479,8 @@ extern char const g_keyAsciiTableShift[128];
 extern int hitscangoalx;
 extern int hitscangoaly;
 
-#define videoEndDrawing enddrawing
-#define videoBeginDrawing begindrawing
+#define videoEndDrawing()
+#define videoBeginDrawing()
 
 #define yax_preparedrawrooms()
 #define yax_drawrooms(a, b, c, d)
@@ -641,5 +644,15 @@ extern int nextvoxid;
 #define CONTROLLER_BUTTON_DPAD_DOWN joybutton_DpadDown
 #define CONTROLLER_BUTTON_DPAD_LEFT joybutton_DpadLeft
 #define CONTROLLER_BUTTON_DPAD_RIGHT joybutton_DpadRight
+
+#ifdef __GNUC__
+# define UNUSED(x) UNUSED_ ## x __attribute__((unused))
+#else
+# define UNUSED(x) x
+#endif
+
+// save-game compatibility
+#undef BMAX_PATH
+#define BMAX_PATH 260
 
 #endif
