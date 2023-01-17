@@ -1247,17 +1247,30 @@ void GAME_onshowosd(int shown)
     // XXX: it's weird to fake a keypress like this.
 //    if (numplayers == 1 && ((shown && !ud.pause_on) || (!shown && ud.pause_on)))
 //        KB_KeyDown[sc_Pause] = 1;
+#ifndef EDUKE32
+    viewUpdatePages();
+#endif
 }
 
 void GAME_clearbackground(int numcols, int numrows)
 {
 #ifndef EDUKE32
+	int nHeight = min(ydim, numrows*14+8);
+	/*
 	videoSetViewableArea(0, 0, xdim - 1, ydim - 1);
-	int nHeight = min(ydim, numrows*8+8);
 	for (int i = 0; i < nHeight; i++) {
 		renderDrawLine(0, i << 12, xdim << 12, i << 12, blackcol);
 	}
 	videoSetViewableArea(gViewX0, gViewY0, gViewX1, gViewY1);
+	*/
+	int xsiz = tilesizx[2490];
+	int ysiz = tilesizy[2490];
+	int tx2 = xdim / xsiz;
+	int ty2 = nHeight / ysiz;
+
+	for (int x = 0; x <= tx2; x++)
+		for (int y = 0; y <= ty2; y++)
+			rotatesprite(x*xsiz<<16, y*ysiz<<16, 65536L, 0, 2490, 48, 0, 8+16+64, 0, 0, xdim, nHeight);
 #else
     COMMON_clearbackground(numcols, numrows);
 #endif

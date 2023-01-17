@@ -2278,12 +2278,12 @@ int app_main(int argc, char const * const * argv)
                      NULL,
                      NULL,
                      GAME_clearbackground,
-                     BGetTime,
 #ifndef EDUKE32
-                     NULL);
+                     NULL,
 #else
-                     GAME_onshowosd);
+                     BGetTime,
 #endif
+                     GAME_onshowosd);
 
     wm_setapptitle(APPNAME);
 
@@ -2354,7 +2354,7 @@ int app_main(int argc, char const * const * argv)
 
     //Bsprintf(tempbuf, HEAD2 " %s", s_buildRev);
 #ifndef EDUKE32
-    OSD_SetParameters(0, 0, 0, 12, 2, 12);
+    //OSD_SetParameters(0, 0, 0, 12, 2, 12);
 #else
     OSD_SetVersion("Blood", 10, 0);
     OSD_SetParameters(0, 0, 0, 12, 2, 12, OSD_ERROR, OSDTEXT_RED, OSDTEXT_DARKRED, gamefunctions[gamefunc_Show_Console][0] == '\0' ? OSD_PROTECTED : 0);
