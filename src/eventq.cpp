@@ -174,7 +174,7 @@ void EventQueue::Kill(int a1, int a2)
 #ifndef EDUKE32
     PQueue->Kill(a1, a2);
 #else
-    PQueue->Kill([=](EVENT nItem)->bool {return (nItem.index == a1 && nItem.type == a2); });
+    PQueue->Kill([=](const EVENT &nItem)->bool {return (nItem.index == a1 && nItem.type == a2); });
 #endif
 }
 
@@ -184,7 +184,7 @@ void EventQueue::Kill(int idx, int type, int causer)
 #ifndef EDUKE32
     PQueue->Kill(idx, type, causer);
 #else
-    PQueue->Kill([=](EVENT nItem)->bool { return (nItem.index == idx && nItem.type == type && nItem.causer == causer); });
+    PQueue->Kill([=](const EVENT &nItem)->bool { return (nItem.index == idx && nItem.type == type && nItem.causer == causer); });
 #endif
 }
 #endif
@@ -194,7 +194,7 @@ void EventQueue::Kill(int a1, int a2, CALLBACK_ID a3)
 #ifndef EDUKE32
     PQueue->Kill(a1, a2, a3);
 #else
-    PQueue->Kill([=](EVENT nItem)->bool {return (nItem.index == a1 && nItem.type == a2 && nItem.cmd == kCmdCallback && nItem.funcID == (unsigned int)a3); });
+    PQueue->Kill([=](const EVENT &nItem)->bool {return (nItem.index == a1 && nItem.type == a2 && nItem.cmd == kCmdCallback && nItem.funcID == (unsigned int)a3); });
 #endif
 }
 
@@ -727,7 +727,7 @@ void evKill(int a1, int a2)
 void evKill(int idx, int type, int causer)
 {
     #ifdef NOONE_EXTENSIONS
-    if (gModernMap)
+    if (gModernMap && isPartOfCauserScript(type, idx))
         eventQ.Kill(idx, type, causer);
     else
     #endif

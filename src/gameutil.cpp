@@ -517,17 +517,16 @@ int VectorScan(spritetype *pSprite, int nOffset, int nZOffset, int dx, int dy, i
             if ((pOther->cstat & 0x30) != 0)
                 return 3;
             int nPicnum = pOther->picnum;
-#ifndef EDUKE32 // TODO nSizX, nSizY
-            if (tilesizx[nPicnum] == 0 || tilesizy[nPicnum] == 0)
-#else
-            if (tilesiz[nPicnum].x == 0 || tilesiz[nPicnum].y == 0)
-#endif
-                return 3;
 #ifndef EDUKE32
-            int height = (tilesizy[nPicnum]*pOther->yrepeat)<<2;
+            int nSizX = tilesizx[nPicnum];
+            int nSizY = tilesizy[nPicnum];
 #else
-            int height = (tilesiz[nPicnum].y*pOther->yrepeat)<<2;
+            int nSizX = tilesiz[nPicnum].x;
+            int nSizY = tilesiz[nPicnum].y;
 #endif
+            if (nSizX == 0 || nSizY == 0)
+                return 3;
+            int height = (nSizY*pOther->yrepeat)<<2;
             int otherZ = pOther->z;
             if (pOther->cstat & 0x80)
                 otherZ += height / 2;
@@ -539,52 +538,26 @@ int VectorScan(spritetype *pSprite, int nOffset, int nZOffset, int dx, int dy, i
             if (nOffset)
                 otherZ -= (nOffset*pOther->yrepeat)<<2;
             dassert(height > 0);
-#ifndef EDUKE32
-            int height2 = scale(otherZ-gHitInfo.hitz, tilesizy[nPicnum], height);
-#else
-            int height2 = scale(otherZ-gHitInfo.hitz, tilesiz[nPicnum].y, height);
-#endif
+            int height2 = scale(otherZ-gHitInfo.hitz, nSizY, height);
             if (!(pOther->cstat & 8))
-#ifndef EDUKE32
-                height2 = tilesizy[nPicnum]-height2;
-#else
-                height2 = tilesiz[nPicnum].y-height2;
-#endif
-#ifndef EDUKE32
-            if (height2 >= 0 && height2 < tilesizy[nPicnum])
-#else
-            if (height2 >= 0 && height2 < tilesiz[nPicnum].y)
-#endif
+                height2 = nSizY-height2;
+            if (height2 >= 0 && height2 < nSizY)
             {
-#ifndef EDUKE32
-                int width = (tilesizx[nPicnum]*pOther->xrepeat)>>2;
-#else
-                int width = (tilesiz[nPicnum].x*pOther->xrepeat)>>2;
-#endif
+                int width = (nSizX*pOther->xrepeat)>>2;
                 width = (width*3)/4;
                 int check1 = ((y1 - pOther->y)*dx - (x1 - pOther->x)*dy) / ksqrt(dx*dx+dy*dy);
                 dassert(width > 0);
+                int width2 = scale(check1, nSizX, width);
 #ifndef EDUKE32
-                int width2 = scale(check1, tilesizx[nPicnum], width);
                 int nOffset = ((signed char)((picanm[nPicnum]>>8)&255));
-                width2 += nOffset + tilesizx[nPicnum] / 2;
 #else
-                int width2 = scale(check1, tilesiz[nPicnum].x, width);
                 int nOffset = picanm[nPicnum].xofs;
-                width2 += nOffset + tilesiz[nPicnum].x / 2;
 #endif
-#ifndef EDUKE32
-                if (width2 >= 0 && width2 < tilesizx[nPicnum])
-#else
-                if (width2 >= 0 && width2 < tilesiz[nPicnum].x)
-#endif
+                width2 += nOffset + nSizX / 2;
+                if (width2 >= 0 && width2 < nSizX)
                 {
                     char *pData = tileLoadTile(nPicnum);
-#ifndef EDUKE32
-                    if (pData[width2*tilesizy[nPicnum]+height2] != (char)255)
-#else
-                    if (pData[width2*tilesiz[nPicnum].y+height2] != (char)255)
-#endif
+                    if (pData[width2*nSizY+height2] != (char)255)
                         return 3;
                 }
             }

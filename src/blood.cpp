@@ -1305,7 +1305,7 @@ void StartLevel(GAMEOPTIONS *gameOptions)
     gSecretMgr.Clear();
     gLevelTime = 0;
     automapping = 1;
-  
+
     int modernTypesErased = 0;
     for (int i = 0; i < kMaxSprites; i++)
     {
@@ -1425,7 +1425,7 @@ void StartLevel(GAMEOPTIONS *gameOptions)
     InitMirrors();
     gFrameClock = 0;
     trInit();
-    if (!bVanilla && !gMe->packSlots[1].isActive) // if diving suit is not active, turn off reverb sound effect
+    if (!VanillaMode() && !packItemActive(gMe, kPackDivingSuit)) // if diving suit is not active, turn off reverb sound effect
         sfxSetReverb(0);
     ambInit();
     netResetState();
@@ -1566,7 +1566,7 @@ void LocalKeys(void)
     char key;
     if ((key = keyGetScan()) != 0)
     {
-        if ((alt || shift) && gGameOptions.nGameType > 0 && key >= sc_F1 && key <= sc_F10)
+        if ((alt || shift) && gGameOptions.nGameType != kGameTypeSinglePlayer && key >= sc_F1 && key <= sc_F10)
         {
             char fk = key - sc_F1;
             if (alt)
