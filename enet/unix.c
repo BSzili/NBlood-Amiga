@@ -92,7 +92,7 @@ int
 enet_initialize (void)
 {
 #if defined(__AROS__) || defined(__MORPHOS__) || defined(__AMIGA__)
-    if (!(SocketBase = OpenLibrary("bsdsocket.library", 4)))
+    if (!(SocketBase = OpenLibrary("bsdsocket.library", 3)))
         return -1;
 
     if (SocketBaseTags(SBTM_SETVAL(SBTC_ERRNOPTR(sizeof(errno))), (Tag)&errno, TAG_DONE))
